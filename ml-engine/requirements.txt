@@ -5,3 +5,4 @@ python-dotenv
 sqlalchemy
 numpy
 scipy
+pytest

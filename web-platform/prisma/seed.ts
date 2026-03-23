@@ -15,6 +15,7 @@ async function main() {
   console.log("Resetting tables...");
 
   // Delete child tables first (to avoid foreign key constraints)
+  await prisma.recommendation.deleteMany({});  // Must be first: depends on User & Community
   await prisma.interaction.deleteMany({});
   await prisma.membership.deleteMany({});
   await prisma.$executeRaw`DELETE FROM "_UserInterests";`;
@@ -29,6 +30,7 @@ async function main() {
   await prisma.$executeRaw`ALTER SEQUENCE "Tag_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Membership_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Interaction_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Recommendation_id_seq" RESTART WITH 1;`;
 
   console.log("Tables cleared, seeding new data...");
 

@@ -66,8 +66,27 @@ export async function getUserCommunities(userId: number) {
   });
 }
 
-//Tag based reccomendations
+// ML-powered recommendations with tag-based fallback
 export async function recommendCommunities(userId: number) {
+  // First, check if ML recommendations exist in the Recommendation table
+  const mlRecommendations = await prisma.recommendation.findMany({
+    where: { userId },
+    orderBy: { score: 'desc' },
+    include: {
+      community: {
+        include: {
+          tags: true
+        }
+      }
+    }
+  });
+
+  // If ML recommendations exist, return them
+  if (mlRecommendations.length > 0) {
+    return mlRecommendations.map(rec => rec.community);
+  }
+
+  // Fallback to tag-based recommendations if no ML data
   return prisma.community.findMany({
     where: {
       tags: {

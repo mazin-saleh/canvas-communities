@@ -136,48 +136,53 @@ User ──── interests ────── Tag ──── communities ─�
 
 ## Setup & Run
 
-### Option 1: Docker (Everything)
+### Option 1: Docker (Recommended)
 
 ```bash
+# 1. Copy and configure environment variables
 cp .env.example .env
-# Edit .env with DB_USER and DB_PASSWORD
+# Edit .env with DB_USER and DB_PASSWORD (or use defaults)
+
+# 2. Start all services
 docker compose up
+
+# 3. Generate ML recommendations (after containers are running)
+curl -X POST http://localhost:8001/recommend/all
 ```
 
 - Web: http://localhost:3000
 - ML Engine: http://localhost:8001/docs
 
-### Option 2: Local Development
+**Note:** Docker handles database migrations and seeding automatically on startup.
+
+### Option 2: Local Development (Without Docker)
+
+**Prerequisites:** PostgreSQL running locally on port 5432
 
 **Terminal 1 — Next.js frontend:**
 ```bash
-cd web-platform && npm install && npm run dev
+cd web-platform
+npm install
+npx prisma migrate dev  # Run migrations
+npx prisma db seed      # Seed test data
+npm run dev
 ```
 
 **Terminal 2 — Python ML engine:**
 ```bash
-cd ml-engine && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --reload --port 8001
+cd ml-engine
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
+```
+
+**Terminal 3 — Generate ML recommendations:**
+```bash
+curl -X POST http://localhost:8001/recommend/all
 ```
 
 - Web: http://localhost:3000
 - ML Engine: http://localhost:8001/docs
 
-### Database Setup
-
-```bash
-# Run migrations (creates all tables)
-cd web-platform && npx prisma migrate dev
-
-# Seed with test data
-cd web-platform && npx prisma db seed
-```
-
-### Trigger Recommendation Training
-
-After seeding, run the training pipeline to generate pre-computed recommendations:
-
-```bash
-curl -X POST http://localhost:8001/train
-```
-
-Then visit http://localhost:3000/recommended to see ranked clubs.
+**Note:** For local dev, ensure `DATABASE_URL` in root `.env` points to your local PostgreSQL instance.

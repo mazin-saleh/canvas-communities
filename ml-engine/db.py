@@ -199,21 +199,26 @@ def upsert_recommendations(records: list[dict]) -> None:
 
     with Session() as session:
         for record in records:
+            # Convert numpy floats to Python floats (psycopg2 doesn't handle np.float64)
+            score = float(record["score"])
+            content_score = float(record["content_score"])
+            collab_score = float(record["collab_score"])
+
             # pg_insert adds ON CONFLICT support — standard SQL INSERT doesn't have this
             stmt = pg_insert(Recommendation.__table__).values(
                 userId       = record["user_id"],
                 communityId  = record["community_id"],
-                score        = record["score"],
-                contentScore = record["content_score"],
-                collabScore  = record["collab_score"],
+                score        = score,
+                contentScore = content_score,
+                collabScore  = collab_score,
             ).on_conflict_do_update(
                 # Matches the @@unique([userId, communityId]) constraint in schema.prisma
                 index_elements=["userId", "communityId"],
                 # Overwrite all three score fields when there's a conflict
                 set_={
-                    "score":        record["score"],
-                    "contentScore": record["content_score"],
-                    "collabScore":  record["collab_score"],
+                    "score":        score,
+                    "contentScore": content_score,
+                    "collabScore":  collab_score,
                 }
             )
             session.execute(stmt)

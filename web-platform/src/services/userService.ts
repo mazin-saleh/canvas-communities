@@ -119,12 +119,12 @@ export async function getUserCommunities(userId: number) {
 }
 
 // ML-powered recommendations with tag-based fallback
-const MAX_RECOMMENDATIONS = 15;
+const MAX_RECOMMENDATIONS = 10;
 
 export async function recommendCommunities(userId: number) {
   // First, check if ML recommendations exist in the Recommendation table
   let mlRecommendations = await prisma.recommendation.findMany({
-    where: { userId },
+    where: { userId, score: { gt: 0 } },
     orderBy: { score: 'desc' },
     take: MAX_RECOMMENDATIONS,
     include: {
@@ -146,7 +146,7 @@ export async function recommendCommunities(userId: number) {
       if (res.ok) {
         // Re-fetch the now-populated recommendations
         mlRecommendations = await prisma.recommendation.findMany({
-          where: { userId },
+          where: { userId, score: { gt: 0 } },
           orderBy: { score: 'desc' },
           take: MAX_RECOMMENDATIONS,
           include: {

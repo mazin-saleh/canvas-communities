@@ -39,13 +39,27 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify({ userId, tagName }),
       }),
+    removeInterest: (userId: number, tagName: string): Promise<User> =>
+      request("/api/user/remove-interest", {
+        method: "PATCH",
+        body: JSON.stringify({ userId, tagName }),
+      }),
+    getInterests: (userId: number): Promise<{ id: number; name: string }[]> =>
+      request(`/api/user/interests?userId=${userId}`, { method: "GET" }),
     joinCommunity: (userId: number, communityId: number): Promise<any> =>
       request("/api/user/join-community", {
-        method: "POST",
+        method: "PATCH",
         body: JSON.stringify({ userId, communityId }),
       }),
-    getCommunities: (userId: number): Promise<Community[]> =>
-      request(`/api/user/communities?userId=${userId}`, { method: "GET" }),
+    getCommunities: (userId: number): Promise<any[]> =>
+      request(`/api/user/communities`, {
+        method: "POST",
+        body: JSON.stringify({ userId }),
+      }),
+  },
+  tags: {
+    getAll: (): Promise<{ id: number; name: string }[]> =>
+      request("/api/tags", { method: "GET" }),
   },
   community: {
     create: (name: string): Promise<Community> =>

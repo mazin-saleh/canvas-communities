@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { DiscoveryClub } from "@/mocks/discovery";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
   return (
@@ -39,15 +40,23 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
           </div>
         </div>
 
-        {/* Next Meeting */}
-        <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs">
-          <p className="font-semibold text-slate-500 uppercase text-[10px] tracking-wide">
-            Next Meeting
-          </p>
-          <p className="mt-1 font-semibold">{club.nextMeeting.title}</p>
-          <p className="text-[13px]">{club.nextMeeting.datetime}</p>
-          <p className="text-slate-500 text-[13px]">{club.nextMeeting.location}</p>
-        </div>
+        {/* Tags */}
+        {club.tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {club.tags.slice(0, 4).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Score indicator if available */}
+        {club.score != null && (
+          <div className="mt-2 text-[10px] text-slate-400">
+            {Math.round(club.score * 100)}% match
+          </div>
+        )}
 
         {/* Actions - pinned to bottom */}
         <div className="mt-auto flex justify-between items-center pt-2">

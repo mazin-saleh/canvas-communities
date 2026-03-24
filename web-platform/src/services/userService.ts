@@ -35,7 +35,7 @@ export async function getUsers() {
 }
 
 export async function addInterest(userId: number, tagName: string) {
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId },
     data: {
       interests: {
@@ -46,15 +46,67 @@ export async function addInterest(userId: number, tagName: string) {
       }
     }
   });
+
+  // Trigger ML recomputation (fire-and-forget, don't block response)
+  fetch(`${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`, { method: 'POST' })
+    .catch(err => console.error('ML recomputation failed:', err));
+
+  return user;
+}
+
+export async function removeInterest(userId: number, tagName: string) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      interests: {
+        disconnect: { name: tagName }
+      }
+    }
+  });
+
+  // Trigger ML recomputation (fire-and-forget, don't block response)
+  fetch(`${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`, { method: 'POST' })
+    .catch(err => console.error('ML recomputation failed:', err));
+
+  return user;
+}
+
+export async function getUserInterests(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { interests: true }
+  });
+  return user?.interests || [];
+}
+
+export async function getAllTags() {
+  return prisma.tag.findMany({
+    orderBy: { name: 'asc' }
+  });
 }
 
 export async function joinCommunity(userId: number, communityId: number) {
-  return prisma.membership.create({
+  // Check for existing membership to avoid unique constraint error
+  const existing = await prisma.membership.findUnique({
+    where: { userId_communityId: { userId, communityId } }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const membership = await prisma.membership.create({
     data: {
       userId,
       communityId
     }
   });
+
+  // Trigger ML recomputation (fire-and-forget, don't block response)
+  fetch(`${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`, { method: 'POST' })
+    .catch(err => console.error('ML recomputation failed:', err));
+
+  return membership;
 }
 
 export async function getUserCommunities(userId: number) {
@@ -81,12 +133,18 @@ export async function recommendCommunities(userId: number) {
     }
   });
 
-  // If ML recommendations exist, return them
+  // If ML recommendations exist, return them with scores preserved
   if (mlRecommendations.length > 0) {
-    return mlRecommendations.map(rec => rec.community);
+    return mlRecommendations.map(rec => ({
+      ...rec.community,
+      score: rec.score,
+      contentScore: rec.contentScore,
+      collabScore: rec.collabScore,
+    }));
   }
 
   // Fallback to tag-based recommendations if no ML data
+  // Exclude communities the user has already joined
   return prisma.community.findMany({
     where: {
       tags: {
@@ -95,10 +153,16 @@ export async function recommendCommunities(userId: number) {
             some: { id: userId }
           }
         }
+      },
+      NOT: {
+        members: {
+          some: { userId }
+        }
       }
     },
     include: {
       tags: true
-    }
+    },
+    orderBy: { name: 'asc' }
   });
 }

@@ -1,37 +1,118 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mockInterests, type Interest } from "@/mocks/interests";
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import InterestPill from "@/components/InterestPill";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+
+type Interest = {
+  id: string;
+  label: string;
+  selected: boolean;
+};
 
 export default function PersonalizePage() {
   const router = useRouter();
+  const { user, hydrated } = useAuth();
   const [search, setSearch] = useState("");
-  const [interests, setInterests] = useState<Interest[]>(mockInterests);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleToggle = (id: string) => {
+  // Load all tags and user's current interests
+  useEffect(() => {
+    if (!hydrated || !user) return;
+
+    async function loadData() {
+      try {
+        // Fetch all available tags and user's selected interests in parallel
+        const [allTags, userInterests] = await Promise.all([
+          api.tags.getAll(),
+          api.user.getInterests(Number(user!.id)),
+        ]);
+
+        // Map user interests to a Set for quick lookup
+        const selectedNames = new Set(userInterests.map((t) => t.name));
+
+        // Transform tags to Interest format with selected state
+        const interestList: Interest[] = allTags.map((tag) => ({
+          id: String(tag.id),
+          label: tag.name,
+          selected: selectedNames.has(tag.name),
+        }));
+
+        setInterests(interestList);
+      } catch (err) {
+        console.error("Failed to load interests:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [hydrated, user]);
+
+  // Toggle interest and sync with backend
+  const handleToggle = async (id: string) => {
+    if (!user) return;
+
+    const interest = interests.find((i) => i.id === id);
+    if (!interest) return;
+
+    // Optimistic update
     setInterests((prev) =>
-      prev.map((interest) =>
-        interest.id === id ? { ...interest, selected: !interest.selected } : interest,
-      ),
+      prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i))
     );
+
+    try {
+      if (interest.selected) {
+        // Currently selected, so remove it
+        await api.user.removeInterest(Number(user.id), interest.label);
+      } else {
+        // Not selected, so add it
+        await api.user.addInterest(Number(user.id), interest.label);
+      }
+    } catch (err) {
+      // Revert on error
+      console.error("Failed to update interest:", err);
+      setInterests((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, selected: interest.selected } : i))
+      );
+    }
   };
 
   const filteredInterests = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return interests;
     return interests.filter((interest) =>
-      interest.label.toLowerCase().includes(query),
+      interest.label.toLowerCase().includes(query)
     );
   }, [interests, search]);
 
   const handleSeeFeed = () => {
     router.push("/recommended");
   };
+
+  // Show loading while auth hydrates or data loads
+  if (!hydrated || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading interests...</div>
+      </div>
+    );
+  }
+
+  // No user logged in
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Please log in to personalize</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl bg-[url('/personalpage.png')] bg-cover bg-center bg-no-repeat p-6 shadow-sm">

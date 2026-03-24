@@ -6,19 +6,30 @@ import { motion } from "framer-motion";
 import Input from "@/components/ui/input";
 import DiscoveryCarouselRow from "@/components/discovery/DiscoveryCarouselRow";
 import EventsYouMightLike from "@/components/discovery/EventsYouMightLike";
-import { discoveryClubs } from "@/mocks/discovery";
+import { DiscoveryClub } from "@/mocks/discovery";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+
+// Tag groups for generating "Since you liked X" rows dynamically
+const TAG_GROUPS: Record<string, string[]> = {
+  Tech: ["Computer Science", "Engineering", "Robotics", "AI & Machine Learning", "Cybersecurity", "javascript", "react", "python"],
+  Social: ["Social", "Leadership", "Networking", "community"],
+  Creative: ["Music", "Art", "Dance"],
+  Athletic: ["Sports", "Fitness", "Outdoors"],
+  Science: ["Pre-Med", "ml"],
+};
 
 const FILTER_CHIPS = [
   "Computer Science",
-  "Food",
-  "Soccer",
-  "Tennis",
-  "Community",
-  "Social",
-  "Volleyball",
-  "Dentistry",
-  "Animals",
   "Engineering",
+  "Social",
+  "Music",
+  "Dance",
+  "Sports",
+  "Fitness",
+  "Outdoors",
+  "Art",
+  "Leadership",
 ];
 
 function findScrollParent(el: Element | null): Element | null {
@@ -33,8 +44,50 @@ function findScrollParent(el: Element | null): Element | null {
 }
 
 export default function DiscoveryPage() {
+  const { user, hydrated } = useAuth();
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [allClubs, setAllClubs] = useState<DiscoveryClub[]>([]);
+  const [userInterests, setUserInterests] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch ML recommendations and user interests when user is available
+  useEffect(() => {
+    if (!hydrated || !user) return;
+
+    async function fetchData() {
+      try {
+        const [data, interests] = await Promise.all([
+          api.community.getRecommended(Number(user!.id)),
+          api.user.getInterests(Number(user!.id)),
+        ]);
+
+        setUserInterests(interests.map((t: any) => t.name));
+
+        const transformed: DiscoveryClub[] = data.map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          description: c.description || "No description available",
+          tags: c.tags?.map((t: any) => t.name) || [],
+          logoSrc: c.avatarUrl || "/avatars/placeholder.png",
+          bannerSrc: "/gator-hero.png",
+          score: c.score,
+          contentScore: c.contentScore,
+          collabScore: c.collabScore,
+        }));
+
+        setAllClubs(transformed);
+      } catch (err: any) {
+        console.error("Failed to fetch recommendations:", err);
+        setError(err.message || "Failed to fetch recommendations");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [hydrated, user]);
 
   const toggleFilter = (label: string) => {
     setActiveFilters((prev) =>
@@ -42,7 +95,7 @@ export default function DiscoveryPage() {
     );
   };
 
-  const applyFilters = (clubs = discoveryClubs) => {
+  const applyFilters = (clubs: DiscoveryClub[]) => {
     const q = query.trim().toLowerCase();
     return clubs.filter((club) => {
       const matchesQuery =
@@ -60,22 +113,36 @@ export default function DiscoveryPage() {
     });
   };
 
-  const forYouClubs = useMemo(() => applyFilters(discoveryClubs), [query, activeFilters]);
-  const foodClubs = useMemo(
-    () => applyFilters(discoveryClubs.filter((c) => c.tags.includes("Food"))),
-    [query, activeFilters]
-  );
-  const soccerClubs = useMemo(
-    () => applyFilters(discoveryClubs.filter((c) => c.tags.includes("Soccer"))),
-    [query, activeFilters]
-  );
+  // ML-ranked recommendations
+  const forYouClubs = useMemo(() => applyFilters(allClubs), [allClubs, query, activeFilters]);
+
+  // Build dynamic "Since you liked X" rows based on user's actual interests
+  const interestRows = useMemo(() => {
+    const rows: { label: string; clubs: DiscoveryClub[] }[] = [];
+    for (const [groupName, groupTags] of Object.entries(TAG_GROUPS)) {
+      // Check if the user has any interests in this group
+      const hasInterest = userInterests.some((interest) =>
+        groupTags.some((gt) => gt.toLowerCase() === interest.toLowerCase())
+      );
+      if (!hasInterest) continue;
+
+      const filtered = applyFilters(
+        allClubs.filter((c) =>
+          c.tags.some((t) => groupTags.some((gt) => gt.toLowerCase() === t.toLowerCase()))
+        )
+      );
+      if (filtered.length > 0) {
+        rows.push({ label: groupName, clubs: filtered });
+      }
+    }
+    return rows.slice(0, 2); // Show at most 2 interest-based rows
+  }, [allClubs, userInterests, query, activeFilters]);
 
   const controlsRef = useRef<HTMLDivElement | null>(null);
   const pageWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const [rowHeight, setRowHeight] = useState<number | undefined>(undefined);
   const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
-  const [debugMetrics, setDebugMetrics] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     const GAP = 32;
@@ -95,24 +162,13 @@ export default function DiscoveryPage() {
 
         const controlsRect = controlsEl ? controlsEl.getBoundingClientRect() : null;
         const controlsBottomRelative = controlsRect ? controlsRect.bottom - containerRect.top : 0;
-        const controlsHeight = controlsRect ? controlsRect.height : 0;
 
-        const bottomMargin = 20; // breathing room
+        const bottomMargin = 20;
         const available = Math.max(0, containerH - controlsBottomRelative - bottomMargin);
 
         const totalGaps = GAP * (NUM_ROWS - 1);
         const rawRowHeight = Math.floor((available - totalGaps) / NUM_ROWS);
         const finalRowHeight = Math.max(MIN_ROW_HEIGHT, rawRowHeight);
-
-        setDebugMetrics({
-          containerHeight: Math.round(containerH),
-          controlsBottomRelative: Math.round(controlsBottomRelative),
-          controlsHeight: Math.round(controlsHeight),
-          availableForRows: Math.round(available),
-          totalGaps: Math.round(totalGaps),
-          rawRowHeight: Math.round(rawRowHeight),
-          finalRowHeight: Math.round(finalRowHeight),
-        });
 
         setContainerHeight(containerH);
         setRowHeight(finalRowHeight);
@@ -140,6 +196,35 @@ export default function DiscoveryPage() {
       if (ro) ro.disconnect();
     };
   }, []);
+
+  // Show loading while auth hydrates
+  if (!hydrated || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading recommendations...</div>
+      </div>
+    );
+  }
+
+  // No user logged in
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Please log in to see personalized recommendations</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-2">
+          <div className="text-red-500 font-medium">Something went wrong</div>
+          <div className="text-sm text-muted-foreground">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={pageWrapperRef} className="relative min-h-full bg-[url('/personalpage.png')] bg-cover bg-center">
@@ -200,27 +285,20 @@ export default function DiscoveryPage() {
                 rowHeight={rowHeight}
               />
 
-              <DiscoveryCarouselRow
-                title={
-                  <>
-                    Since you liked <span className="text-orange-500">Food</span>
-                  </>
-                }
-                clubs={foodClubs}
-                rowId="food"
-                rowHeight={rowHeight}
-              />
-
-              <DiscoveryCarouselRow
-                title={
-                  <>
-                    Since you liked <span className="text-orange-500">Soccer</span>
-                  </>
-                }
-                clubs={soccerClubs}
-                rowId="soccer"
-                rowHeight={rowHeight}
-              />
+              {interestRows.map((row) => (
+                <DiscoveryCarouselRow
+                  key={row.label}
+                  title={
+                    <>
+                      Since you liked{" "}
+                      <span className="text-orange-500">{row.label}</span>
+                    </>
+                  }
+                  clubs={row.clubs}
+                  rowId={row.label.toLowerCase()}
+                  rowHeight={rowHeight}
+                />
+              ))}
             </div>
           </div>
 

@@ -27,7 +27,8 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --font-default: var(--font-ibm);
+    --background: 228 74% 23%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
@@ -52,6 +53,9 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+  }
+  html.font-anybody {
+    --font-default: var(--font-anybody);
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -87,5 +91,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-default), sans-serif;
   }
 }

@@ -4,6 +4,11 @@ export default {
     content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
   	extend: {
+		fontFamily: {
+			sans: ['"IBM Plex Sans"', 'sans-serif'],
+			ibm: ['"IBM Plex Sans"', 'sans-serif'],
+			anybody: ['"Anybody"', 'sans-serif']
+		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

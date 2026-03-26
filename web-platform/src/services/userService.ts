@@ -112,10 +112,15 @@ export async function joinCommunity(userId: number, communityId: number) {
 }
 
 export async function getUserCommunities(userId: number) {
-  return prisma.membership.findMany({
-    where: { userId },
+  return prisma.community.findMany({
+    where: {
+      members: {
+        some: { userId }
+      }
+    },
     include: {
-      community: true
+      tags: true,
+      members: true
     }
   });
 }

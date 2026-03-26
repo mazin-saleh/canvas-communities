@@ -16,14 +16,16 @@ const navLinks = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
+    <div className="min-h-screen bg-background text-slate-50">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Top navbar */}
         <header className="flex items-center justify-between py-5">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-slate-800 ring-1 ring-white/10 flex items-center justify-center font-semibold">
-              C
-            </div>
+            <img
+              src="Frame.svg"
+              alt="Canvas Communities Logo"
+              className="h-8 w-auto"
+            />
             <span className="text-sm sm:text-base font-semibold tracking-tight">
               Connector
             </span>
@@ -42,21 +44,20 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="px-4 py-2 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
-          >
-            UFL Login
-          </Link>
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
+            >
+              UFL Login
+            </Link>
 
-          <Link
-            href="/signup"
-            className="px-4 py-2 rounded-md bg-white text-slate-900 text-sm font-medium ring-1 ring-slate-200 hover:bg-slate-50"
-          >
-            Sign up
-          </Link>
-        </div>
-
+            <Link
+              href="/signup"
+              className="px-4 py-2 rounded-md bg-white text-slate-900 text-sm font-medium ring-1 ring-slate-200 hover:bg-slate-50"
+            >
+              Sign up
+            </Link>
+          </div>
         </header>
 
         {/* Hero card */}
@@ -111,4 +112,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

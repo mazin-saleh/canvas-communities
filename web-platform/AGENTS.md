@@ -1,0 +1,154 @@
+---
+name: web-platform-agent
+description: Folder-specific operating guide for agents working inside web-platform only. Put cross-repo policy in root AGENTS.md.
+---
+
+# AGENTS.md - Web Platform Folder Guide
+
+This file is intentionally scoped to web-platform only.
+
+If guidance applies to multiple master folders, do not add it here. Add it to the root AGENTS.md instead.
+
+## 1) Scope Boundary
+
+In scope:
+
+- web-platform/\*\*
+
+Out of scope (belongs in root AGENTS.md):
+
+- Cross-folder team policy and coding norms
+- Shared Git/PR workflow for the entire monorepo
+- Repo-wide security/compliance standards
+- Global definition of team roles that are not folder-specific
+
+## 2) Folder Snapshot (Current)
+
+Technology and runtime specific to this folder:
+
+- Next.js App Router + React + strict TypeScript
+- Prisma + PostgreSQL integration for web data layer
+- Tailwind + Radix UI for component styling and primitives
+- Local startup and container startup both depend on this folder's package scripts and start.sh flow
+
+Folder architecture:
+
+- UI routes: src/app/\*\*
+- API route handlers: src/app/api/\*\*/route.ts
+- UI components: src/components/** and src/components/ui/**
+- Auth state: src/context/AuthContext.tsx
+- Domain/services: src/services/\*.ts
+- Client API helper: src/lib/api.ts
+- Prisma connection and generated client usage: src/lib/prisma.ts and src/generated/prisma/\*\*
+- Schema source: prisma/schema.prisma
+
+Route-group structure:
+
+- (marketing)
+- (auth)
+- (onboard)
+- (app)
+
+## 3) Web-Platform-Specific Rules
+
+1. Preserve layer boundaries inside this folder:
+
+- API handlers map HTTP and validate inputs.
+- Business/data logic belongs in src/services.
+
+2. Keep API client and route contracts aligned in this folder:
+
+- If route method/path/payload/response changes in src/app/api, update src/lib/api.ts in the same task.
+
+3. Do not hand-edit generated Prisma output in this folder:
+
+- Never manually edit src/generated/prisma/\*\*.
+- Regenerate via Prisma commands.
+
+4. Protect app flow specific to this folder:
+
+- Changes to src/context/AuthContext.tsx or app layouts must verify login/onboarding redirects still behave correctly.
+
+5. Prefer existing UI primitives already present in this folder:
+
+- Reuse src/components/ui/\*\* before introducing custom one-off controls.
+
+## 4) Folder Ownership Map
+
+Ownership for web-platform files only:
+
+- src/app/\*\*: UI + API implementation
+- src/app/api/\*\*: API contract and validation
+- src/services/\*\*: service/data logic
+- src/lib/api.ts: frontend API helper contract
+- src/lib/prisma.ts and prisma/\*\*: database access/schema
+- src/generated/prisma/\*\*: generated output (read-only except regeneration)
+
+## 5) Folder Quality Gates
+
+Minimum checks before completing work in web-platform:
+
+- npm run lint (from web-platform)
+- For API edits: validate one end-to-end path from src/lib/api.ts to src/app/api to src/services
+- For schema edits: run Prisma generate and verify consumers compile
+- For auth/layout edits: verify login/onboarding redirect behavior
+
+## 6) Folder Contract Drift Watchlist (Current)
+
+Current mismatches inside web-platform to address when touching related code:
+
+- None currently recorded.
+
+Rule for this file:
+
+- If you modify one side of a mismatch, either update the other side in the same task or document intentional divergence in this section.
+
+## 7) Local Commands For This Folder
+
+Run from web-platform:
+
+- npm install
+- npm run dev
+- npm run build
+- npm run lint
+- npx prisma generate
+- npx prisma db push
+- npx prisma db seed
+
+Container startup sequence used by web-platform/start.sh:
+
+- prisma db push
+- prisma generate
+- prisma db seed
+- npm run dev
+
+## 8) Context Update Protocol For This Folder (Mandatory)
+
+Update this file whenever web-platform-specific context changes:
+
+- Route endpoints/methods/payloads/responses
+- Service responsibilities or layer boundaries in this folder
+- Route-group structure or auth/onboarding behavior
+- Prisma schema usage expectations in this folder
+- Folder-local run/build/start commands
+
+When updating:
+
+1. Edit the relevant section above.
+2. Add a new entry at top of Context Update Log.
+3. If the change affects multiple master folders, also add a short handoff note under Root AGENTS Handoff Notes.
+
+## 9) Root AGENTS Handoff Notes
+
+Use this section to note cross-folder updates that must be reflected in root AGENTS.md.
+
+- 2026-03-23 | Root baseline created | Root AGENTS.md now defines monorepo defaults; keep this file restricted to web-platform-specific rules.
+- 2026-03-23 | Initial split decision | This file intentionally keeps only web-platform-specific guidance.
+
+## 10) Context Update Log
+
+Add newest entries at top.
+
+- 2026-03-23 | Communities payload alignment | Updated getUserCommunities service to return Community records (with tags and members) to match src/lib/api.ts user.getCommunities contract.
+- 2026-03-23 | Contract drift resolved | Aligned user/join-community route to POST and user/communities route to GET with query parameter to match src/lib/api.ts contracts.
+- 2026-03-23 | Scope refactor | Converted web-platform AGENTS.md to folder-only guidance and moved cross-repo intent to root AGENTS.md handoff.

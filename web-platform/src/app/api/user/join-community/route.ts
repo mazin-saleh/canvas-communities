@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { joinCommunity } from "@/services/userService";
 
-export async function PATCH(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const { userId, communityId } = await req.json();
     if (!userId || !communityId) return NextResponse.json({ error: "userId and communityId required" }, { status: 400 });

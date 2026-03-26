@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserCommunities } from "@/services/userService";
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const userIdParam = req.nextUrl.searchParams.get("userId");
+    const userId = Number(userIdParam);
     if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
 
     const communities = await getUserCommunities(userId);

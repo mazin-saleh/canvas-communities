@@ -215,7 +215,7 @@ export default function DiscoveryPage() {
   }, []);
 
   return (
-    <div ref={pageWrapperRef} className="relative min-h-full bg-[url('/personalpage.png')] bg-cover bg-center">
+    <div ref={pageWrapperRef} className="relative min-h-full bg-[url('/background.png')] bg-cover bg-center">
       <div className="absolute inset-0 bg-white/90" />
 
       {/* page content */}

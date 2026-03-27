@@ -1,109 +1,62 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-
-const navLinks = [
-  { label: "Announcements", href: "/announcements" },
-  { label: "ExplorePage", href: "/login" },
-  { label: "Calendar", href: "/calendar" },
-  { label: "Activity", href: "/activity" },
-  { label: "Contact", href: "/contact" },
-  { label: "Personalize", href: "/personalize" },
-  { label: "Discovery Page", href: "/discovery" },
-];
+import PublicHeader from "@/components/public/PublicHeader";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-slate-50">
+    <div className="min-h-screen overflow-y-auto bg-background text-slate-50">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Top navbar */}
-        <header className="flex items-center justify-between py-5">
-          <Link href="/" className="flex items-center gap-2">
-            <img
-              src="Frame.svg"
-              alt="Canvas Communities Logo"
-              className="h-8 w-auto"
-            />
-            <span className="text-sm sm:text-base font-semibold tracking-tight">
-              Connector
-            </span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-200">
-            {navLinks.map((l) => (
-              <Link
-                key={l.label}
-                href={l.href}
-                className="hover:text-white transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
-            >
-              UFL Login
-            </Link>
-
-            <Link
-              href="/signup"
-              className="px-4 py-2 rounded-md bg-white text-slate-900 text-sm font-medium ring-1 ring-slate-200 hover:bg-slate-50"
-            >
-              Sign up
-            </Link>
-          </div>
-        </header>
+        <PublicHeader />
 
         {/* Hero card */}
-        <main className="pb-12 sm:pb-16">
-          <section className="bg-amber-50 text-slate-900 rounded-3xl ring-1 ring-black/5 shadow-sm px-6 py-10 sm:px-10 sm:py-12">
-            <div className="flex flex-col lg:flex-row items-center gap-10">
-              <div className="flex-1 w-full">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight">
-                  Discover Communities
-                  <br />
-                  Get Involved
-                  <br />
-                  Stay Connected.
-                </h1>
-
-                <p className="mt-4 text-base sm:text-lg text-slate-700 max-w-xl">
-                  Find student orgs, see what’s happening on campus, and build
-                  your circle—fast.
-                </p>
-
-                <div className="mt-7 flex flex-col sm:flex-row gap-3">
-                  <Link
-                    href="/login"
-                    className="px-5 py-3 rounded-md bg-white text-slate-900 ring-1 ring-slate-200 text-sm font-medium hover:bg-slate-50 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-amber-50"
-                  >
-                    ExplorePage
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="px-5 py-3 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-amber-50"
-                  >
-                    UFL Login
-                  </Link>
-                </div>
+        <main className="pb-12 sm:pb-16 lg:pb-20">
+          <section className="min-h-[clamp(28rem,58vh,40rem)] overflow-hidden bg-[url('/landingbackground.png')] bg-cover bg-center bg-no-repeat text-slate-900 rounded-3xl ring-1 ring-black/5 shadow-sm px-6 sm:px-10">
+            <div className="flex min-h-[inherit] flex-col justify-center py-10 sm:py-12 lg:py-14">
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/35 bg-white/10 px-4 py-2 backdrop-blur-sm w-fit">
+                <Image
+                  src="/Frame.svg"
+                  alt="Canvas Communities logo"
+                  width={26}
+                  height={26}
+                  priority
+                  className="h-[26px] w-[26px]"
+                />
+                <span className="text-sm font-semibold text-white">
+                  Canvas Communities
+                </span>
               </div>
 
-              <div className="flex-1 w-full flex justify-center lg:justify-end">
-                <div className="relative w-full max-w-md aspect-[4/3]">
-                  <Image
-                    src="/gator-hero.png"
-                    alt="Gator mascot"
-                    fill
-                    priority
-                    className="object-contain"
-                  />
-                </div>
+              <h1 className="max-w-3xl text-3xl sm:text-4xl lg:text-6xl font-semibold tracking-tight leading-tight">
+                <span className="text-white font-bold">Discover </span>
+                <span className="text-indigo-800 font-bold">Communities</span>
+                <br />
+                <span className="text-white font-bold">Get </span>
+                <span className="text-indigo-800 font-bold">Involved</span>
+                <br />
+                <span className="text-white font-bold">Stay </span>
+                <span className="text-indigo-800 font-bold">Connected.</span>
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-base text-slate-100 sm:text-lg">
+                Find student orgs, see what’s happening on campus, and build
+                your circle-fast.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/login"
+                  className="px-14 py-3.5 bg-indigo-800 rounded-[20px] text-center text-white text-base font-semibold leading-6 tracking-wide hover:bg-indigo-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-amber-50"
+                >
+                  Explore Page
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-14 py-3.5 bg-indigo-800 rounded-[20px] text-center text-white text-base font-semibold leading-6 tracking-wide hover:bg-indigo-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-amber-50"
+                >
+                  UFL Login
+                </Link>
               </div>
             </div>
           </section>

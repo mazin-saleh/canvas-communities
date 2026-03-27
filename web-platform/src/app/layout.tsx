@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { RoleProvider } from "@/context/RoleContext";
 import { Anybody, IBM_Plex_Sans } from "next/font/google";
 //import GlobalLogoHeader from "@/components/GlobalLogoHeader";
 
@@ -30,8 +31,10 @@ export default function RootLayout({
     <html lang="en" className={`${ibmPlexSans.variable} ${anybody.variable}`}>
       <body>
         <AuthProvider>
-          {/* <GlobalLogoHeader /> */}
-          {children}
+          <RoleProvider>
+            {/* <GlobalLogoHeader /> */}
+            {children}
+          </RoleProvider>
         </AuthProvider>
       </body>
     </html>

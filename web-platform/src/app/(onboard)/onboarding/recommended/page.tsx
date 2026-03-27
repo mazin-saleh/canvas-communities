@@ -10,9 +10,11 @@ export default function OnboardRecommended() {
   const { completeOnboarding } = useAuth();
 
   return (
-    <div className="space-y-6">
-      <RecommendedPage />
-      <div className="flex justify-end">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 py-5 md:px-6">
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <RecommendedPage />
+      </div>
+      <div className="flex justify-end pt-4">
         <Button
           onClick={() => {
             completeOnboarding();

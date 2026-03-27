@@ -73,6 +73,26 @@ Route-group structure:
 
 - Reuse src/components/ui/\*\* before introducing custom one-off controls.
 
+6. For Figma-driven UI implementation in this folder:
+
+- Match Figma design specs as exactly as possible for visual details (corner radii, typography, spacing, color, hierarchy, and component sizing).
+- Use mobile-first layout structure with flexbox and responsive scaling across phone, tablet, and desktop breakpoints.
+- Only adjust for responsive fit and readability across viewport sizes; avoid changing the core visual design language.
+- Prevent element crowding/sandwiching at intermediate widths by using fluid widths, max-width constraints, and breakpoint-aware spacing.
+
+7. Modularize repeated UI into custom components:
+
+- Any UI that is used more than once, or is expected to be used repeatedly, must be extracted into a reusable custom component.
+- If something can be turned into a component while preserving design quality, it should be turned into a custom component aligned with this folder's visual language.
+
+8. Build responsive layouts with dynamic sizing and fit-aware breakpoints:
+
+- Use fluid sizing with explicit minimum and maximum constraints so components scale consistently across common screen ratios.
+- Define breakpoints by fit and readability, not only device labels: hide, collapse, or reflow elements when they do not comfortably fit.
+- iPhone layouts should be the most compact and prioritize core actions/content.
+- iPad/tablet layouts should add moderate breathing room and only bring back secondary elements when they comfortably fit.
+- Desktop layouts should expose full component sets while still flexing fluidly with viewport width.
+
 ## 4) Folder Ownership Map
 
 Ownership for web-platform files only:
@@ -148,6 +168,14 @@ Use this section to note cross-folder updates that must be reflected in root AGE
 ## 10) Context Update Log
 
 Add newest entries at top.
+
+- 2026-03-26 | Club-admin RBAC shell baseline | Added mock role context + ProtectedRoute guard for club-admin routes and introduced a dedicated admin dashboard shell with role-gated navigation sections (General Info, Roster, Content, Settings).
+
+- 2026-03-26 | Dynamic sizing + fit-based breakpoints policy | Added a rule requiring fluid min/max sizing and fit-aware responsive behavior across iPhone, iPad, and desktop.
+
+- 2026-03-26 | Reusable custom component policy | Added a mandatory rule to extract repeated/reusable UI into modular custom components that stay consistent with web-platform design language.
+
+- 2026-03-26 | Figma implementation fidelity + responsive policy | Added explicit web-platform rule to implement Figma visuals exactly and allow only mobile-first, flexbox-based responsive sizing adjustments to prevent layout crowding across mobile/tablet/desktop.
 
 - 2026-03-23 | Communities payload alignment | Updated getUserCommunities service to return Community records (with tags and members) to match src/lib/api.ts user.getCommunities contract.
 - 2026-03-23 | Contract drift resolved | Aligned user/join-community route to POST and user/communities route to GET with query parameter to match src/lib/api.ts contracts.

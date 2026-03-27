@@ -4,8 +4,8 @@ export default function OnboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-5xl p-6">{children}</div>
+    <div className="h-[100dvh] w-full overflow-hidden bg-[#f0f0f2]">
+      {children}
     </div>
   );
 }

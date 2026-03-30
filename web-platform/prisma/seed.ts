@@ -6,7 +6,9 @@ import bcrypt from "bcrypt";
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaPg(
+  pool as unknown as ConstructorParameters<typeof PrismaPg>[0]
+);
 const prisma = new PrismaClient({ adapter });
 
 const SALT_ROUNDS = 10;
@@ -57,6 +59,11 @@ async function main() {
     { name: 'Environmental Science' },
     { name: 'Public Health' },
     { name: 'Neuroscience' },
+    { name: 'Pharmacy'},
+    { name: 'Medicine'},
+    { name: 'Agricultural and Life Sciences'},
+    { name: 'Nursing'},
+    { name: 'Dentistry'},
     // Social & Leadership
     { name: 'Social' },
     { name: 'Networking' },
@@ -64,6 +71,7 @@ async function main() {
     { name: 'Community Service' },
     { name: 'Volunteering' },
     { name: 'Mentorship' },
+    { name: 'Ambassador'},
     // Creative
     { name: 'Music' },
     { name: 'Art' },
@@ -78,6 +86,7 @@ async function main() {
     { name: 'Outdoors' },
     { name: 'Martial Arts' },
     { name: 'Yoga & Wellness' },
+    { name: 'Military' },
     // Professional & Academic
     { name: 'Business' },
     { name: 'Finance' },
@@ -85,16 +94,22 @@ async function main() {
     { name: 'Law' },
     { name: 'Research' },
     { name: 'Academic' },
+    { name: 'Construction Design & Planning'},
+    { name: 'Education'},
+    { name: 'Journalism & Communications'},
+    { name: 'Liberal Arts and Sciences'},
     // Culture & Identity
     { name: 'Cultural' },
     { name: 'International' },
     { name: 'Diversity' },
     { name: 'Language' },
+    { name: 'Multicultural Greek Council'},
     // Lifestyle
     { name: 'Food' },
     { name: 'Gaming' },
     { name: 'Sustainability' },
-    { name: 'Mental Health' },
+    { name: 'Mental Health' }
+
   ];
 
   const tags: { [name: string]: { id: number; name: string } } = {};
@@ -105,7 +120,7 @@ async function main() {
   console.log(`Seeded ${Object.keys(tags).length} tags`);
 
   // ---------------------------------------------------------------------------
-  // Communities — 50 diverse communities
+  // Communities
   // ---------------------------------------------------------------------------
   const communityData = [
     // ── Tech ──
@@ -170,6 +185,9 @@ async function main() {
     { name: 'Hispanic-Latinx Student Assembly', description: 'Cultural celebrations, academic support, and community building.', avatarUrl: 'https://picsum.photos/seed/latinx/200', tagNames: ['Cultural', 'Diversity', 'Social'] },
     { name: 'Asian Pacific Islander Alliance', description: 'Heritage events, advocacy, and social gatherings for AAPI students.', avatarUrl: 'https://picsum.photos/seed/aapi/200', tagNames: ['Cultural', 'Diversity', 'Social'] },
     { name: 'Language Exchange Club', description: 'Practice languages with native speakers over coffee and activities.', avatarUrl: 'https://picsum.photos/seed/language/200', tagNames: ['Language', 'International', 'Social'] },
+    { name: 'BETA CHI THETA', description: 'The purpose of Beta Theta is to assemble motivated young men to uphold the six founding pillars by which it stands', avatarURL: 'https://picsum.photos/seed/betatheta/200', tagNames: ['Multicultural Greek Council', 'Mentorship', 'Cultural']},
+    { name: 'GAMMA ETA', description: 'Gamma Eta Sorority, Inc. is a diverse sorority that aims to foster strong female leadership within the University of Florida campus. We challenge our members to help them reach their maximum potential. We are a social sorority that stands for the pillars of sisterhood, service, strength, scholarship, leadership, unity, and diversity. We seek to make a mark on this campus and on each other.', avatarURL: 'https://picsum.photos/seed/gammaeta/200', tagNames: ['Multicultural Greek Council', 'Mentorship', 'Cultural']},
+    { name: 'PI DELTA PSI', description: 'Educate ourselves and others about Asian American culture and striving to be leaders in the community through academic achievement, cultural awareness, righteousness, and friendship/loyalty.', avatarURL: 'https://picsum.photos/seed/pidelta/200', tagNames: ['Multicultural Greek Council', 'Mentorship', 'Cultural']},
 
     // ── Lifestyle ──
     { name: 'Gator Grilling Club', description: 'Fire up the grill, learn recipes, and host campus cookouts.', avatarUrl: 'https://picsum.photos/seed/grilling/200', tagNames: ['Food', 'Social'] },

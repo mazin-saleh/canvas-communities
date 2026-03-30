@@ -21,3 +21,9 @@ export async function addCommunityTag(communityId: number, tagName: string) {
     }
   });
 }
+
+export async function getCommunityById(id: number) {
+  return prisma.community.findUnique({
+    where: { id },
+  });
+}

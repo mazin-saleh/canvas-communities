@@ -67,9 +67,8 @@ export const api = {
         body: JSON.stringify({ userId, communityId }),
       }),
     getCommunities: (userId: number): Promise<any[]> =>
-      request(`/api/user/communities`, {
-        method: "POST",
-        body: JSON.stringify({ userId }),
+      request(`/api/user/communities?userId=${userId}`, {
+        method: "GET",
       }),
   },
   tags: {
@@ -89,5 +88,7 @@ export const api = {
       }),
     getRecommended: (userId: number): Promise<Community[]> =>
       request(`/api/community/recommend?userId=${userId}`, { method: "GET" }),
+    getById: (id: number): Promise<Community> =>
+      request(`/api/community/get?id=${id}`, { method: "GET" }),
   },
 };

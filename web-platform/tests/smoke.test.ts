@@ -187,12 +187,9 @@ async function testJoinCommunity() {
   assert(res.data.communityId === communityId, "Membership should reference community");
 
   // Verify membership shows up
-  const communities = await api("/api/user/communities", {
-    method: "POST",
-    body: JSON.stringify({ userId: testUserId }),
-  });
+  const communities = await api(`/api/user/communities?userId=${testUserId}`);
   assert(communities.status === 200, "Get communities should return 200");
-  const ids = communities.data.map((m: any) => m.communityId);
+  const ids = communities.data.map((m: any) => m.id);
   assert(ids.includes(communityId), "Should be member of joined community");
 
   // Duplicate join should not crash

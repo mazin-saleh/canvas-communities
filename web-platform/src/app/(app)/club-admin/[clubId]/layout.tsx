@@ -12,7 +12,7 @@ export default function ClubAdminLayout({ children }: { children: React.ReactNod
   return (
     <ProtectedRoute
       clubId={clubId}
-      allowedRoles={["Owner", "Admin", "Editor"]}
+      requireClubOwnerOrAdmin
       fallback={
         <div className="p-6 text-sm text-slate-600">
           Checking permissions for this admin workspace...

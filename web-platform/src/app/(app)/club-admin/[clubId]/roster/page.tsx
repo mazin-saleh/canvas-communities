@@ -40,7 +40,7 @@ export default function ClubRosterPage() {
   });
 
   const userRole = getRoleForClub(clubId);
-  const canAssignAdmin = userRole === "Owner" || userRole === "Admin";
+  const canAssignAdmin = userRole === "club_owner" || userRole === "club_admin";
 
   const totalMembers = useMemo(() => {
     return sections.reduce((sum, section) => sum + section.members.length, 0);

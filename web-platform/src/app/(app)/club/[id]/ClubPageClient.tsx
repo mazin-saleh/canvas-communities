@@ -20,12 +20,8 @@ import BoardMembersPanel from "./components/board/BoardMembersPanel";
 import { boardSectionsData } from "./components/board/boardData";
 import MainLayout from "./components/shell/MainLayout";
 import { type SocialLink } from "./components/shell/types";
-import {
-  Circle,
-  Facebook,
-  Linkedin,
-  MessageCircle,
-} from "lucide-react";
+import { Circle, Facebook, Linkedin, MessageCircle } from "lucide-react";
+import ClubAdminPanelButton from "@/components/ClubAdminPanelButton";
 
 type ClubMember = {
   id: string | number;
@@ -343,50 +339,51 @@ export default function ClubPageClient({
       onJoin={handleJoin}
       socialLinks={socialLinks}
       upcomingMeetings={upcomingMeetings}
+      headerOverlayAction={<ClubAdminPanelButton clubId={club.id} />}
     >
       <Tabs defaultValue="announcements" className="w-full">
-              <TabsList className="h-auto w-full justify-start gap-2 rounded-none border-b border-gray-300 bg-transparent p-0">
-                <TabsTrigger
-                  value="announcements"
-                  className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-                >
-                  Announcements
-                </TabsTrigger>
-                <TabsTrigger
-                  value="events"
-                  className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-                >
-                  Events
-                </TabsTrigger>
-                <TabsTrigger
-                  value="gallery"
-                  className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-                >
-                  Gallery
-                </TabsTrigger>
-                <TabsTrigger
-                  value="members"
-                  className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-                >
-                  Board Members
-                </TabsTrigger>
-              </TabsList>
+        <TabsList className="h-auto w-full justify-start gap-2 rounded-none border-b border-gray-300 bg-transparent p-0">
+          <TabsTrigger
+            value="announcements"
+            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
+          >
+            Announcements
+          </TabsTrigger>
+          <TabsTrigger
+            value="events"
+            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
+          >
+            Events
+          </TabsTrigger>
+          <TabsTrigger
+            value="gallery"
+            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
+          >
+            Gallery
+          </TabsTrigger>
+          <TabsTrigger
+            value="members"
+            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
+          >
+            Board Members
+          </TabsTrigger>
+        </TabsList>
 
-              <TabsContent value="announcements">
-                <AnnouncementsPanel announcements={announcementsData} />
-              </TabsContent>
+        <TabsContent value="announcements">
+          <AnnouncementsPanel announcements={announcementsData} />
+        </TabsContent>
 
-              <TabsContent value="events">
-                <EventsContainer events={normalizedEvents} />
-              </TabsContent>
+        <TabsContent value="events">
+          <EventsContainer events={normalizedEvents} />
+        </TabsContent>
 
-              <TabsContent value="gallery">
-                <GalleryGrid items={galleryData} />
-              </TabsContent>
+        <TabsContent value="gallery">
+          <GalleryGrid items={galleryData} />
+        </TabsContent>
 
-              <TabsContent value="members">
-                <BoardMembersPanel sections={boardSectionsData} />
-              </TabsContent>
+        <TabsContent value="members">
+          <BoardMembersPanel sections={boardSectionsData} />
+        </TabsContent>
       </Tabs>
     </MainLayout>
   );

@@ -8,6 +8,7 @@ type MainLayoutProps = {
   clubName: string;
   bannerSrc?: string;
   headerGradient?: string;
+  headerOverlayAction?: React.ReactNode;
   logoSrc: string;
   clubDesc: string;
   clubTags: Array<string | { name?: string }>;
@@ -23,6 +24,7 @@ export default function MainLayout({
   clubName,
   bannerSrc,
   headerGradient,
+  headerOverlayAction,
   logoSrc,
   clubDesc,
   clubTags,
@@ -47,11 +49,19 @@ export default function MainLayout({
       }
     >
       <div className="overflow-hidden bg-[var(--club-page-bg)]">
-        <PageHeader
-          clubName={clubName}
-          bannerSrc={bannerSrc}
-          gradient={headerGradient || clubTheme.headerGradient}
-        />
+        <div className="relative">
+          <PageHeader
+            clubName={clubName}
+            bannerSrc={bannerSrc}
+            gradient={headerGradient || clubTheme.headerGradient}
+          />
+
+          {headerOverlayAction ? (
+            <div className="pointer-events-none absolute bottom-3 right-3 z-20 sm:bottom-4 sm:right-4 lg:bottom-5 lg:right-5">
+              <div className="pointer-events-auto">{headerOverlayAction}</div>
+            </div>
+          ) : null}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[270px_minmax(0,1fr)]">
           <ClubSidebar

@@ -2,8 +2,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { api } from "@/lib/api";
 
-type User = { id: string; name: string };
+type User = { id: string; name: string; platformRole?: string | null };
 
 type AuthCtx = {
   user: User | null;
@@ -18,25 +19,70 @@ const AuthContext = createContext<AuthCtx | null>(null);
 
 const KEY = "cc_auth";
 
+type StoredAuthPayload = {
+  user: User | null;
+  onboarded: boolean;
+};
+
+function readStoredAuth(): StoredAuthPayload {
+  if (typeof window === "undefined") {
+    return { user: null, onboarded: false };
+  }
+
+  const raw = localStorage.getItem(KEY);
+  if (!raw) {
+    return { user: null, onboarded: false };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<StoredAuthPayload>;
+    return {
+      user: parsed.user ?? null,
+      onboarded: parsed.onboarded ?? false,
+    };
+  } catch (error) {
+    console.warn("[AuthContext] failed parsing localStorage", error);
+    return { user: null, onboarded: false };
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [onboarded, setOnboarded] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const initialAuth = readStoredAuth();
+  const [user, setUser] = useState<User | null>(initialAuth.user);
+  const [onboarded, setOnboarded] = useState(initialAuth.onboarded);
+  const hydrated = true;
 
   useEffect(() => {
-    console.log("[AuthContext] mount - reading localStorage");
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
+    async function hydratePlatformRole() {
+      if (!user) {
+        return;
+      }
+
       try {
-        const parsed = JSON.parse(raw);
-        setUser(parsed.user ?? null);
-        setOnboarded(parsed.onboarded ?? false);
-      } catch (e) {
-        console.warn("[AuthContext] failed parsing localStorage", e);
+        const access = await api.user.getAccess(Number(user.id));
+        setUser((current) => {
+          if (!current) {
+            return current;
+          }
+
+          if (current.platformRole === access.user.platformRole) {
+            return current;
+          }
+
+          const nextUser = { ...current, platformRole: access.user.platformRole };
+          const payload = { user: nextUser, onboarded };
+          localStorage.setItem(KEY, JSON.stringify(payload));
+          return nextUser;
+        });
+      } catch (error) {
+        console.warn("[AuthContext] failed hydrating platformRole", error);
       }
     }
-    setHydrated(true);
-  }, []);
+
+    if (hydrated) {
+      void hydratePlatformRole();
+    }
+  }, [hydrated, onboarded, user]);
 
   // instrumentation: log when user/onboarded changes
   useEffect(() => {

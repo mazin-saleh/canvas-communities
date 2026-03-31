@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useRole } from "@/context/RoleContext";
 import {
   Select,
   SelectContent,
@@ -43,6 +45,10 @@ const initialEvents: EventDraft[] = [
 ];
 
 export default function EventsEditor() {
+  const params = useParams<{ clubId: string }>();
+  const { hasClubPermission } = useRole();
+  const clubId = params?.clubId ?? "0";
+  const canManageEvents = hasClubPermission(clubId, "canManageEvents");
   const [items, setItems] = useState<EventDraft[]>(initialEvents);
 
   const publicPayload = useMemo(() => eventDraftsToPublic(items), [items]);
@@ -83,13 +89,19 @@ export default function EventsEditor() {
         <p className="text-sm text-slate-600">
           Create event entries with scheduling, location, and publish controls.
         </p>
-        <Button
-          type="button"
-          onClick={addEvent}
-          className="h-[40px] rounded-[5px] bg-[#354a9c] text-white hover:bg-[#2e448b]"
-        >
-          Add Event
-        </Button>
+        {canManageEvents ? (
+          <Button
+            type="button"
+            onClick={addEvent}
+            className="h-[40px] rounded-[5px] bg-[#354a9c] text-white hover:bg-[#2e448b]"
+          >
+            Add Event
+          </Button>
+        ) : (
+          <span className="text-xs text-slate-500">
+            Event editing is disabled for your role.
+          </span>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -104,12 +116,14 @@ export default function EventsEditor() {
                 onChange={(event) => update(item.id, { title: event.target.value })}
                 placeholder="Event title"
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <Select
                 value={item.status}
                 onValueChange={(value: EventDraft["status"]) =>
                   update(item.id, { status: value })
                 }
+                disabled={!canManageEvents}
               >
                 <SelectTrigger className="h-[42px] rounded-[5px] border-[#c8c8c8]">
                   <SelectValue placeholder="Status" />
@@ -127,6 +141,7 @@ export default function EventsEditor() {
               placeholder="Event description"
               rows={3}
               className="rounded-[5px] border-[#c8c8c8] bg-white"
+              disabled={!canManageEvents}
             />
 
             <div className="grid gap-3 sm:grid-cols-4">
@@ -135,12 +150,14 @@ export default function EventsEditor() {
                 value={item.date}
                 onChange={(event) => update(item.id, { date: event.target.value })}
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <Input
                 type="time"
                 value={item.time}
                 onChange={(event) => update(item.id, { time: event.target.value })}
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <Input
                 value={item.locationName}
@@ -149,10 +166,12 @@ export default function EventsEditor() {
                 }
                 placeholder="Location"
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <Select
                 value={item.eventType}
                 onValueChange={(value) => update(item.id, { eventType: value })}
+                disabled={!canManageEvents}
               >
                 <SelectTrigger className="h-[42px] rounded-[5px] border-[#c8c8c8]">
                   <SelectValue placeholder="Type" />
@@ -173,12 +192,14 @@ export default function EventsEditor() {
                 onChange={(event) => update(item.id, { lat: event.target.value })}
                 placeholder="Latitude (optional)"
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <Input
                 value={item.lng}
                 onChange={(event) => update(item.id, { lng: event.target.value })}
                 placeholder="Longitude (optional)"
                 className="h-[42px] rounded-[5px] border-[#c8c8c8]"
+                disabled={!canManageEvents}
               />
               <div className="sm:col-span-2">
                 <Button
@@ -186,6 +207,7 @@ export default function EventsEditor() {
                   variant="outline"
                   onClick={() => remove(item.id)}
                   className="h-[42px] w-full rounded-[5px] border-rose-300 text-rose-700 hover:bg-rose-50"
+                  disabled={!canManageEvents}
                 >
                   Delete
                 </Button>

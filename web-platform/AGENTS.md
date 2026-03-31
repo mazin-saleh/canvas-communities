@@ -131,6 +131,7 @@ Run from web-platform:
 - npm run dev
 - npm run build
 - npm run lint
+- npm run test:security
 - npx prisma generate
 - npx prisma db push
 - npx prisma db seed
@@ -168,6 +169,14 @@ Use this section to note cross-folder updates that must be reflected in root AGE
 ## 10) Context Update Log
 
 Add newest entries at top.
+
+- 2026-03-28 | Security QA integration coverage | Added route-level security integration tests for IDOR, privilege escalation, and ABAC enforcement in tests/security.integration.test.ts, plus a roster-protected member kick endpoint at src/app/api/clubs/[clubId]/members/[memberId]/kick/route.ts and npm run test:security command.
+
+- 2026-03-28 | Frontend authz sync integration | Replaced mock role derivation with server-synced access state, gated sidebar/admin links by platform and club roles, added ABAC-aware UI controls in club-admin content, and introduced admin-request submission/review UI surfaces.
+
+- 2026-03-27 | Role-request API baseline | Added guarded role-management APIs for club admin requests, super-admin review/approval, and club-owner role governance with audit logging under src/app/api/clubs/[clubId]/admin-requests, src/app/api/admin/requests, src/app/api/admin/requests/[requestId]/approve, and src/app/api/clubs/[clubId]/manage-roles.
+
+- 2026-03-27 | Server-only auth guard baseline | Added DB-validated server-side authorization utility baseline in src/lib/auth-guards.ts for session validation and fail-closed RBAC/ABAC guard checks prior to route-level business logic work.
 
 - 2026-03-26 | Club-admin RBAC shell baseline | Added mock role context + ProtectedRoute guard for club-admin routes and introduced a dedicated admin dashboard shell with role-gated navigation sections (General Info, Roster, Content, Settings).
 

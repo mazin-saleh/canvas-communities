@@ -4,11 +4,13 @@ import React, { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useRole } from "@/context/RoleContext";
-import { isRoleAllowed, parseClubId, type UserRole } from "@/lib/rbac";
+import type { ClubPermissionSet } from "@/context/RoleContext";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
-  allowedRoles: UserRole[];
+  requireSuperAdmin?: boolean;
+  requireClubOwnerOrAdmin?: boolean;
+  requiredClubPermission?: keyof ClubPermissionSet;
   clubId?: string | number;
   unauthenticatedRedirect?: string;
   unauthorizedRedirect?: string;
@@ -17,25 +19,55 @@ type ProtectedRouteProps = {
 
 export default function ProtectedRoute({
   children,
-  allowedRoles,
+  requireSuperAdmin = false,
+  requireClubOwnerOrAdmin = false,
+  requiredClubPermission,
   clubId,
   unauthenticatedRedirect = "/login",
   unauthorizedRedirect = "/discovery",
   fallback = null,
 }: ProtectedRouteProps) {
   const { user, hydrated } = useAuth();
-  const { getRoleForClub, hasAnyAllowedRole } = useRole();
+  const { isSuperAdmin, isClubOwnerOrAdmin, hasClubPermission } = useRole();
   const router = useRouter();
   const pathname = usePathname();
 
   const isAuthorized = useMemo(() => {
     if (!user) return false;
-    if (clubId !== undefined) {
-      const role = getRoleForClub(parseClubId(clubId));
-      return role ? isRoleAllowed(role, allowedRoles) : false;
+
+    if (requireSuperAdmin && !isSuperAdmin) {
+      return false;
     }
-    return hasAnyAllowedRole(allowedRoles);
-  }, [allowedRoles, clubId, getRoleForClub, hasAnyAllowedRole, user]);
+
+    if (requireClubOwnerOrAdmin) {
+      if (clubId === undefined) {
+        return false;
+      }
+
+      if (!isClubOwnerOrAdmin(clubId)) {
+        return false;
+      }
+    }
+
+    if (requiredClubPermission) {
+      if (clubId === undefined) {
+        return false;
+      }
+
+      return hasClubPermission(clubId, requiredClubPermission);
+    }
+
+    return true;
+  }, [
+    clubId,
+    hasClubPermission,
+    isClubOwnerOrAdmin,
+    isSuperAdmin,
+    requireClubOwnerOrAdmin,
+    requireSuperAdmin,
+    requiredClubPermission,
+    user,
+  ]);
 
   useEffect(() => {
     if (!hydrated) return;

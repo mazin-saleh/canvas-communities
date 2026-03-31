@@ -17,6 +17,8 @@ model User {
   id              Int              @id @default(autoincrement())
   username        String           @unique
   password        String
+  platformRole    String           @default("GENERAL_USER")
+  sessionVersion  Int              @default(1)
   interests       Tag[]            @relation("UserInterests")
   memberships     Membership[]
   interactions    Interaction[]

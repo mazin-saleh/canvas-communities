@@ -8,9 +8,12 @@ import { dateKey } from "./eventUtils";
 
 type EventsContainerProps = {
   events: EventData[];
+  canEdit?: boolean;
+  onEditEvent?: (id: string) => void;
+  onDeleteEvent?: (id: string) => void;
 };
 
-export default function EventsContainer({ events }: EventsContainerProps) {
+export default function EventsContainer({ events, canEdit, onEditEvent, onDeleteEvent }: EventsContainerProps) {
   const [activeType, setActiveType] = useState<string>("All");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
@@ -38,7 +41,7 @@ export default function EventsContainer({ events }: EventsContainerProps) {
 
   return (
     <section className="mt-2 rounded-xl border border-gray-300 bg-[#f7f7f7] p-3">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
         <EventsSidebar
           events={events}
           selectedDate={selectedDate}
@@ -49,7 +52,7 @@ export default function EventsContainer({ events }: EventsContainerProps) {
           eventCountByType={eventCountByType}
         />
 
-        <EventList events={filteredEvents} />
+        <EventList events={filteredEvents} canEdit={canEdit} onEdit={onEditEvent} onDelete={onDeleteEvent} />
       </div>
     </section>
   );

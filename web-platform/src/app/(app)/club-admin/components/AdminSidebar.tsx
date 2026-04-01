@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useClubAdmin } from "../[clubId]/ClubAdminContext";
 
 type AdminSidebarProps = {
   clubId: string;
@@ -11,33 +12,41 @@ type NavItem = {
   label: string;
   href: string;
   matchPrefix: string;
+  visible: boolean;
 };
 
 export default function AdminSidebar({ clubId }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { isOwner, userPermissions } = useClubAdmin();
 
   const items: NavItem[] = [
     {
       label: "General Info",
       href: `/club-admin/${clubId}/general-info`,
       matchPrefix: `/club-admin/${clubId}/general-info`,
+      visible: true, // always visible
     },
     {
       label: "Roster",
       href: `/club-admin/${clubId}/roster`,
       matchPrefix: `/club-admin/${clubId}/roster`,
+      visible: isOwner || userPermissions.includes("canManageRoster"),
     },
     {
-      label: "Content",
-      href: `/club-admin/${clubId}/content`,
-      matchPrefix: `/club-admin/${clubId}/content`,
+      label: "Roles",
+      href: `/club-admin/${clubId}/roles`,
+      matchPrefix: `/club-admin/${clubId}/roles`,
+      visible: isOwner,
     },
     {
       label: "Settings",
       href: `/club-admin/${clubId}/settings`,
       matchPrefix: `/club-admin/${clubId}/settings`,
+      visible: isOwner,
     },
   ];
+
+  const visibleItems = items.filter(item => item.visible);
 
   return (
     <aside className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] p-4 shadow-sm lg:p-5">
@@ -45,7 +54,7 @@ export default function AdminSidebar({ clubId }: AdminSidebarProps) {
         Admin Dashboard
       </h2>
       <nav className="space-y-2">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.matchPrefix}/`);
 
           return (
@@ -71,17 +80,6 @@ export default function AdminSidebar({ clubId }: AdminSidebarProps) {
           );
         })}
       </nav>
-
-      <div className="mt-5 rounded-xl border border-[var(--admin-border)] bg-white p-3 text-xs text-slate-600">
-        <p className="font-semibold text-slate-800">Need to publish an update?</p>
-        <p className="mt-1">Use the content tools to draft announcements and events for your members.</p>
-        <Link
-          href={`/club-admin/${clubId}/create-post`}
-          className="mt-2 inline-flex font-semibold text-[var(--admin-brand-teal)] underline-offset-2 hover:underline"
-        >
-          Create a post
-        </Link>
-      </div>
     </aside>
   );
 }

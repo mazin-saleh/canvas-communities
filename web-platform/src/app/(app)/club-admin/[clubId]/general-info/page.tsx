@@ -1,21 +1,40 @@
-import GeneralInfoForm, {
-  type ClubIdentityDraft,
-} from "../../components/general-info/GeneralInfoForm";
+"use client";
 
-const defaultGeneralInfoValue: ClubIdentityDraft = {
-  clubName: "Gator Coding Club",
-  bannerSrc: "/background.png",
-  clubDesc:
-    "A student-led community focused on collaborative software projects, mentorship, and technical workshops across campus.",
-  clubTags: ["Tech", "Community", "Workshops"],
-  socialLinks: [
-    { platform: "Website", href: "gatorcodingclub.org" },
-    { platform: "Instagram", href: "instagram.com/gatorcodingclub" },
-    { platform: "LinkedIn", href: "linkedin.com/company/gatorcodingclub" },
-    { platform: "Discord", href: "discord.gg/gatorcoding" },
-  ],
-};
+import { useClubAdmin } from "../ClubAdminContext";
+import GeneralInfoForm, { type ClubIdentityDraft } from "../../components/general-info/GeneralInfoForm";
 
 export default function ClubGeneralInfoPage() {
-  return <GeneralInfoForm initialValue={defaultGeneralInfoValue} />;
+  const { club, loading, isOwner, userPermissions, actions } = useClubAdmin();
+
+  if (loading || !club) {
+    return <p className="text-sm text-slate-500">Loading club info...</p>;
+  }
+
+  const canEdit = isOwner || userPermissions.includes("canManageSettings");
+
+  const initialValue: ClubIdentityDraft = {
+    clubName: club.name,
+    bannerSrc: "/background.png",
+    clubDesc: club.description,
+    clubTags: club.tags.map(t => t.name),
+    socialLinks: [
+      { platform: "Website", href: "" },
+      { platform: "Instagram", href: "" },
+      { platform: "LinkedIn", href: "" },
+      { platform: "Discord", href: "" },
+    ],
+  };
+
+  return (
+    <GeneralInfoForm
+      initialValue={initialValue}
+      readOnly={!canEdit}
+      onSave={async (draft) => {
+        await actions.updateClub({
+          name: draft.clubName,
+          description: draft.clubDesc,
+        });
+      }}
+    />
+  );
 }

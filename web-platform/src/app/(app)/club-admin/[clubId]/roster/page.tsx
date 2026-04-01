@@ -1,194 +1,106 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useRole } from "@/context/RoleContext";
-import {
-  type BoardMember,
-  type BoardSectionData,
-  boardSectionsData,
-} from "@/app/(app)/club/[id]/components/board/boardData";
-import MemberEditorDialog from "../../components/roster/MemberEditorDialog";
-
-type EditingContext = {
-  open: boolean;
-  sectionId: string;
-  member: BoardMember | null;
-};
-
-const AVAILABLE_ROLES = [
-  "Admin",
-  "President",
-  "Vice President",
-  "Finances",
-  "Treasury",
-  "Outreach",
-  "Member",
-];
+import { Users, X } from "lucide-react";
+import { useClubAdmin } from "../ClubAdminContext";
 
 export default function ClubRosterPage() {
-  const params = useParams<{ clubId: string }>();
-  const clubId = params?.clubId || "0";
-  const { getRoleForClub } = useRole();
+  const { members, actions, isOwner, userPermissions } = useClubAdmin();
+  const [kickingId, setKickingId] = useState<number | null>(null);
 
-  const [sections, setSections] = useState<BoardSectionData[]>(() => boardSectionsData);
-  const [editingContext, setEditingContext] = useState<EditingContext>({
-    open: false,
-    sectionId: sections[0]?.id || "main-board",
-    member: null,
-  });
+  useEffect(() => {
+    members.fetch();
+  }, [members]);
 
-  const userRole = getRoleForClub(clubId);
-  const canAssignAdmin = userRole === "club_owner" || userRole === "club_admin";
+  const canKick = isOwner || userPermissions.includes("canManageRoster");
 
-  const totalMembers = useMemo(() => {
-    return sections.reduce((sum, section) => sum + section.members.length, 0);
-  }, [sections]);
-
-  const openAddModal = (sectionId: string) => {
-    setEditingContext({
-      open: true,
-      sectionId,
-      member: null,
-    });
+  const handleKick = async (membershipId: number, username: string) => {
+    if (!confirm(`Remove ${username} from this club?`)) return;
+    setKickingId(membershipId);
+    try {
+      await actions.kickMember(membershipId);
+    } catch (e) {
+      console.error("Failed to kick member", e);
+    } finally {
+      setKickingId(null);
+    }
   };
 
-  const openEditModal = (member: BoardMember, sectionId: string) => {
-    setEditingContext({
-      open: true,
-      sectionId,
-      member,
-    });
-  };
+  if (members.loading) {
+    return <p className="py-8 text-center text-sm text-stone-400">Loading roster...</p>;
+  }
 
-  const handleSaveMember = (member: BoardMember, sectionId: string) => {
-    setSections((current) =>
-      current.map((section) => {
-        if (section.id !== sectionId) {
-          return section;
-        }
+  if (members.error) {
+    return <p className="py-8 text-center text-sm text-red-600">Failed to load roster: {members.error}</p>;
+  }
 
-        const existingIndex = section.members.findIndex(
-          (existingMember) => existingMember.id === member.id,
-        );
-
-        if (existingIndex === -1) {
-          return { ...section, members: [...section.members, member] };
-        }
-
-        return {
-          ...section,
-          members: section.members.map((existingMember) =>
-            existingMember.id === member.id ? member : existingMember,
-          ),
-        };
-      }),
-    );
-  };
-
-  const handleRemoveMember = (memberId: string, sectionId: string) => {
-    setSections((current) =>
-      current.map((section) => {
-        if (section.id !== sectionId) {
-          return section;
-        }
-
-        return {
-          ...section,
-          members: section.members.filter((member) => member.id !== memberId),
-        };
-      }),
-    );
-  };
+  const memberList = members.data ?? [];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Roster Management</h2>
-          <p className="text-sm text-slate-600">
-            Add, edit, and remove board members while previewing public card output.
-          </p>
-        </div>
-
-        <div className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-brand-teal-soft)] px-3 py-1 text-xs font-semibold text-[var(--admin-brand-teal)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--admin-brand-teal)]" />
-          {totalMembers} total members
-        </div>
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-stone-900">Members</h2>
+        <span className="inline-flex items-center gap-1.5 text-xs text-stone-500">
+          <Users className="h-3.5 w-3.5" />
+          {memberList.length}
+        </span>
       </div>
 
-      <div className="space-y-4">
-        {sections.map((section) => (
-          <section
-            key={section.id}
-            className="rounded-xl border border-[var(--admin-border)] bg-white p-4"
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
-                <p className="text-xs text-slate-500">{section.members.length} members</p>
-              </div>
-              <Button
-                type="button"
-                onClick={() => openAddModal(section.id)}
-                className="h-[40px] rounded-[5px] bg-[#354a9c] text-white hover:bg-[#2e448b]"
-              >
-                Add Member
-              </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--admin-border)] text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="py-2 font-semibold">Name</th>
-                    <th className="py-2 font-semibold">Role</th>
-                    <th className="py-2 font-semibold">Image URL</th>
-                    <th className="py-2 text-right font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {section.members.map((member) => (
-                    <tr
-                      key={member.id}
-                      className="border-b border-[var(--admin-border)] text-slate-700 last:border-b-0"
+      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-stone-100 bg-stone-50/60 text-left text-xs text-stone-500">
+              <th className="px-4 py-2.5 font-medium">User</th>
+              <th className="px-4 py-2.5 font-medium">Roles</th>
+              {canKick && <th className="w-20 px-4 py-2.5 text-right font-medium" />}
+            </tr>
+          </thead>
+          <tbody>
+            {memberList.map((member) => (
+              <tr key={member.id} className="border-b border-stone-100 last:border-b-0">
+                <td className="px-4 py-3 font-medium text-stone-900">{member.user.username}</td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    {member.assignedRoles.length > 0
+                      ? member.assignedRoles.map((ar) => (
+                          <span
+                            key={ar.clubRole.id}
+                            className="inline-block rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+                            style={{ backgroundColor: ar.clubRole.color }}
+                          >
+                            {ar.clubRole.name}
+                          </span>
+                        ))
+                      : <span className="text-xs text-stone-400">--</span>
+                    }
+                  </div>
+                </td>
+                {canKick && (
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleKick(member.id, member.user.username)}
+                      disabled={kickingId === member.id}
+                      className="rounded p-1 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      title="Remove member"
                     >
-                      <td className="py-2.5 font-medium text-slate-900">{member.name}</td>
-                      <td className="py-2.5">{member.role}</td>
-                      <td className="max-w-[280px] truncate py-2.5 text-xs text-slate-500">
-                        {member.imageURL || "No image URL"}
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => openEditModal(member, section.id)}
-                          className="h-[34px] rounded-[5px] border-[#c8c8c8] px-3"
-                        >
-                          Edit
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ))}
+                      <X className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+            {memberList.length === 0 && (
+              <tr>
+                <td colSpan={canKick ? 3 : 2} className="px-4 py-10 text-center text-sm text-stone-400">
+                  No members yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-
-      <MemberEditorDialog
-        key={`${editingContext.sectionId}-${editingContext.member?.id ?? "new"}-${editingContext.open ? "open" : "closed"}`}
-        open={editingContext.open}
-        onOpenChange={(open) => setEditingContext((current) => ({ ...current, open }))}
-        sectionId={editingContext.sectionId}
-        editingMember={editingContext.member}
-        availableRoles={AVAILABLE_ROLES}
-        canAssignAdmin={canAssignAdmin}
-        onSave={handleSaveMember}
-        onRemove={handleRemoveMember}
-      />
     </div>
   );
 }

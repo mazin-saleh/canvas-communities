@@ -138,7 +138,7 @@ Run from web-platform:
 
 Container startup sequence used by web-platform/start.sh:
 
-- prisma db push
+- prisma db push (if it reports data-loss risk, startup skips destructive apply unless PRISMA_ACCEPT_DATA_LOSS=true)
 - prisma generate
 - prisma db seed
 - npm run dev
@@ -169,6 +169,8 @@ Use this section to note cross-folder updates that must be reflected in root AGE
 ## 10) Context Update Log
 
 Add newest entries at top.
+
+- 2026-03-31 | Safe startup schema sync gate | Updated web-platform/start.sh behavior so Prisma data-loss warnings no longer crash startup by default; destructive schema apply now requires PRISMA_ACCEPT_DATA_LOSS=true.
 
 - 2026-03-28 | Security QA integration coverage | Added route-level security integration tests for IDOR, privilege escalation, and ABAC enforcement in tests/security.integration.test.ts, plus a roster-protected member kick endpoint at src/app/api/clubs/[clubId]/members/[memberId]/kick/route.ts and npm run test:security command.
 

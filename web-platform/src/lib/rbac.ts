@@ -18,9 +18,3 @@ export function parseClubId(clubId: string | number): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function deriveMockRole(userId: string, clubId: string | number): UserRole {
-  const normalizedId = Number(userId) || userId.length;
-  const normalizedClubId = parseClubId(clubId);
-  const bucket = Math.abs(normalizedId + normalizedClubId) % RBAC_ROLES.length;
-  return RBAC_ROLES[bucket];
-}

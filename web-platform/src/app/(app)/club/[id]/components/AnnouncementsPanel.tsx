@@ -10,10 +10,14 @@ import {
 type AnnouncementFilter = "all" | AnnouncementCategory;
 
 type AnnouncementsPanelProps = {
-  announcements: AnnouncementItemData[];
+  announcements: (AnnouncementItemData & { pinned?: boolean })[];
+  canEdit?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onTogglePin?: (id: string, currentPinned: boolean) => void;
 };
 
-export default function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
+export default function AnnouncementsPanel({ announcements, canEdit, onEdit, onDelete, onTogglePin }: AnnouncementsPanelProps) {
   const [activeFilter, setActiveFilter] = useState<AnnouncementFilter>("all");
 
   const visibleAnnouncements = useMemo(() => {
@@ -54,7 +58,15 @@ export default function AnnouncementsPanel({ announcements }: AnnouncementsPanel
 
       <div className="space-y-4">
         {visibleAnnouncements.map((announcement) => (
-          <AnnouncementItem key={announcement.id} announcement={announcement} />
+          <AnnouncementItem
+            key={announcement.id}
+            announcement={announcement}
+            canEdit={canEdit}
+            onEdit={onEdit ? () => onEdit(announcement.id) : undefined}
+            onDelete={onDelete ? () => onDelete(announcement.id) : undefined}
+            onTogglePin={onTogglePin ? () => onTogglePin(announcement.id, announcement.pinned ?? false) : undefined}
+            pinned={announcement.pinned}
+          />
         ))}
 
         {visibleAnnouncements.length === 0 && (

@@ -219,16 +219,25 @@ async function main() {
       username: 'alice',
       password: 'alice123',
       interestTags: ['Computer Science', 'AI & Machine Learning', 'Web Development', 'Open Source'],
+      platformRole: 'SUPER_ADMIN',
     },
     {
       username: 'bob',
       password: 'bob123',
       interestTags: ['Gaming', 'Music', 'Social'],
+      platformRole: 'SUPER_ADMIN',
     },
     {
       username: 'carol',
       password: 'carol123',
       interestTags: ['Pre-Med', 'Biology', 'Neuroscience', 'Research'],
+      platformRole: 'SUPER_ADMIN',
+    },
+    {
+      username: 'Javierm333',
+      password: 'javierm333',
+      interestTags: ['Computer Science', 'Networking'],
+      platformRole: 'SUPER_ADMIN',
     },
     {
       username: 'alice_tech',
@@ -284,6 +293,7 @@ async function main() {
       data: {
         username: u.username,
         password: hashedPassword,
+        platformRole: u.platformRole ?? 'GENERAL_USER',
         interests: {
           connect: u.interestTags.map((n) => ({ name: n })),
         },

@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Kill Chrome's focus ring on Radix dialog content */
+[role="dialog"]:focus,
+[role="dialog"]:focus-visible,
+[data-radix-focus-guard],
+[data-state="open"][role="dialog"] {
+  outline: none !important;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15) !important;
+}
+
 /* small utility for text truncation */
 .line-clamp-2 {
   display: -webkit-box;

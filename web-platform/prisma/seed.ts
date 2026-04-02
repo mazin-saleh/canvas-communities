@@ -443,6 +443,11 @@ async function main() {
     { username: 'iris_creative', communityName: 'Music Collective', type: 'view' },
   ];
 
+  await prisma.user.update({
+    where: { username: 'alice' },
+    data: { platformRole: 'SUPER_ADMIN' },
+  });
+
   await prisma.interaction.createMany({
     data: interactionData.map((i) => ({
       userId: users[i.username].id,

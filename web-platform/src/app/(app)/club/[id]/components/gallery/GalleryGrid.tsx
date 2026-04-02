@@ -1,15 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
 import GalleryItem from "./GalleryItem";
 import GalleryLightbox from "./GalleryLightbox";
 import { type GalleryMedia } from "./galleryData";
 
 type GalleryGridProps = {
   items: GalleryMedia[];
+  canDelete?: boolean;
+  onDelete?: (id: string) => void;
 };
 
-export default function GalleryGrid({ items }: GalleryGridProps) {
+export default function GalleryGrid({ items, canDelete, onDelete }: GalleryGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedItem, setSelectedItem] = useState<GalleryMedia | null>(null);
 
@@ -43,7 +46,19 @@ export default function GalleryGrid({ items }: GalleryGridProps) {
 
       <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:grid-cols-3">
         {visibleItems.map((item) => (
-          <GalleryItem key={item.id} item={item} onSelect={setSelectedItem} />
+          <div key={item.id} className="group relative">
+            <GalleryItem item={item} onSelect={setSelectedItem} />
+            {canDelete && onDelete && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                className="absolute right-1 top-1 z-10 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
 

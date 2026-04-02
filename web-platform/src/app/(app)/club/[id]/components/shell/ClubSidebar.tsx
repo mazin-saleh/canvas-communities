@@ -27,7 +27,7 @@ export default function ClubSidebar({
   upcomingMeetings,
 }: ClubSidebarProps) {
   return (
-    <aside className="border-b border-r-0 border-gray-200 bg-[var(--club-sidebar-bg)] p-3 sm:p-4 lg:border-b-0 lg:border-r">
+    <aside className="border-b border-r-0 border-gray-200 bg-[var(--club-sidebar-bg)] p-4 sm:p-5 lg:border-b-0 lg:border-r">
       <ClubIdentity
         logoSrc={logoSrc}
         clubName={clubName}

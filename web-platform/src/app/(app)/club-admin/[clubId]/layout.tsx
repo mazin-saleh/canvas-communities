@@ -4,6 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminLayout from "../components/AdminLayout";
+import { ClubAdminProvider } from "./ClubAdminContext";
 
 export default function ClubAdminLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ clubId: string }>();
@@ -19,13 +20,15 @@ export default function ClubAdminLayout({ children }: { children: React.ReactNod
         </div>
       }
     >
-      <AdminLayout
-        clubId={clubId}
-        title="Club Admin Dashboard"
-        subtitle="Manage your club profile, members, and publishing tools from one place."
-      >
-        {children}
-      </AdminLayout>
+      <ClubAdminProvider clubId={Number(clubId)}>
+        <AdminLayout
+          clubId={clubId}
+          title="Club Admin Dashboard"
+          subtitle="Manage your club profile, members, and publishing tools from one place."
+        >
+          {children}
+        </AdminLayout>
+      </ClubAdminProvider>
     </ProtectedRoute>
   );
 }

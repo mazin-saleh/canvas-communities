@@ -25,5 +25,47 @@ export async function addCommunityTag(communityId: number, tagName: string) {
 export async function getCommunityById(id: number) {
   return prisma.community.findUnique({
     where: { id },
+    include: {
+      tags: true,
+      members: {
+        include: {
+          user: { select: { id: true, username: true } },
+          assignedRoles: {
+            include: {
+              clubRole: {
+                include: { permissions: true },
+              },
+            },
+          },
+        },
+      },
+      owner: true,
+    },
+  });
+}
+
+export async function updateCommunity(
+  id: number,
+  data: Partial<{ name: string; description: string; avatarUrl: string | null }>
+) {
+  return prisma.community.update({
+    where: { id },
+    data,
+    include: {
+      tags: true,
+      members: {
+        include: {
+          user: { select: { id: true, username: true } },
+          assignedRoles: {
+            include: {
+              clubRole: {
+                include: { permissions: true },
+              },
+            },
+          },
+        },
+      },
+      owner: true,
+    },
   });
 }

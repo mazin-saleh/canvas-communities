@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import TagList from "./TagList";
 
 type ClubIdentityProps = {
   logoSrc: string;
@@ -16,14 +15,13 @@ export default function ClubIdentity({
   logoSrc,
   clubName,
   clubDesc,
-  clubTags,
   joined,
   joining,
   onJoin,
 }: ClubIdentityProps) {
   return (
     <section className="relative z-10">
-      <div className="-mt-16 mb-4 h-20 w-20 overflow-hidden rounded-xl border-2 border-white bg-[#0f2d6b] shadow-sm sm:-mt-20 sm:h-24 sm:w-24 lg:-mt-24">
+      <div className="-mt-14 mb-3 h-[72px] w-[72px] overflow-hidden rounded-xl border-2 border-white bg-[#0f2d6b] shadow-md sm:-mt-16 sm:h-20 sm:w-20 lg:-mt-20 lg:h-24 lg:w-24">
         <Image
           src={logoSrc}
           alt={clubName}
@@ -33,20 +31,21 @@ export default function ClubIdentity({
         />
       </div>
 
-      <h1 className="text-2xl font-semibold leading-tight text-black sm:text-3xl lg:text-5xl">
+      <h1 className="font-anybody text-[1.75rem] font-bold leading-tight tracking-tight text-gray-950 sm:text-3xl lg:text-[2.25rem]">
         {clubName}
       </h1>
-      <p className="mt-4 text-[13px] leading-5 text-gray-700">{clubDesc}</p>
 
-      <TagList tags={clubTags} />
+      <p className="mt-3 text-sm leading-relaxed text-gray-600 lg:text-[15px]">
+        {clubDesc}
+      </p>
 
       <Button
         variant={joined ? "outline" : "default"}
         onClick={onJoin}
         disabled={joining}
-        className={`mt-6 h-9 w-full rounded-md text-sm ${
+        className={`mt-5 h-10 w-full cursor-pointer rounded-full text-sm font-semibold ${
           joined
-            ? "border border-[var(--club-brand-orange)] text-[var(--club-brand-orange)]"
+            ? "border-2 border-[var(--club-brand-orange)] text-[var(--club-brand-orange)] hover:bg-orange-50"
             : "bg-[var(--club-brand-orange)] text-white hover:bg-[var(--club-brand-orange-hover)]"
         }`}
       >

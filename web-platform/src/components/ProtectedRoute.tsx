@@ -28,12 +28,17 @@ export default function ProtectedRoute({
   fallback = null,
 }: ProtectedRouteProps) {
   const { user, hydrated } = useAuth();
-  const { isSuperAdmin, isClubOwnerOrAdmin, hasClubPermission } = useRole();
+  const { isSuperAdmin, isClubOwnerOrAdmin, hasClubPermission, roleReady } = useRole();
   const router = useRouter();
   const pathname = usePathname();
 
+  // Wait for both auth and role contexts to be ready before checking authorization
+  const ready = hydrated && roleReady;
+
   const isAuthorized = useMemo(() => {
     if (!user) return false;
+    // Don't evaluate until role data is loaded
+    if (!ready) return true; // optimistic — don't redirect while loading
 
     if (requireSuperAdmin && !isSuperAdmin) {
       return false;
@@ -63,6 +68,7 @@ export default function ProtectedRoute({
     hasClubPermission,
     isClubOwnerOrAdmin,
     isSuperAdmin,
+    ready,
     requireClubOwnerOrAdmin,
     requireSuperAdmin,
     requiredClubPermission,
@@ -75,13 +81,16 @@ export default function ProtectedRoute({
       router.replace(unauthenticatedRedirect);
       return;
     }
-    if (!isAuthorized) {
+    // Only redirect when role data is fully loaded
+    if (ready && !isAuthorized) {
       router.replace(unauthorizedRedirect);
     }
-  }, [hydrated, isAuthorized, router, unauthenticatedRedirect, unauthorizedRedirect, user, pathname]);
+  }, [hydrated, ready, isAuthorized, router, unauthenticatedRedirect, unauthorizedRedirect, user, pathname]);
 
   if (!hydrated) return null;
-  if (!user || !isAuthorized) return <>{fallback}</>;
+  if (!user) return <>{fallback}</>;
+  if (!ready) return <>{fallback}</>;
+  if (!isAuthorized) return <>{fallback}</>;
 
   return <>{children}</>;
 }

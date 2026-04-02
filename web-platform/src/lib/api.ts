@@ -68,10 +68,12 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
     body: options?.body ? JSON.parse(String(options.body)) : undefined,
   });
 
+  const userId = getActiveUserId();
   const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(userId ? { "x-user-id": String(userId) } : {}),
       ...(options.headers || {}),
     },
   });
@@ -199,5 +201,84 @@ export const api = {
       request(`/api/community/recommend?userId=${userId}`, { method: "GET" }),
     getById: (id: number): Promise<Community> =>
       request(`/api/community/get?id=${id}`, { method: "GET" }),
+    update: (communityId: number, data: { name?: string; description?: string; avatarUrl?: string | null }) =>
+      request(`/api/community/${communityId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    // Events
+    getEvents: (communityId: number) =>
+      request(`/api/community/${communityId}/events`, { method: "GET" }),
+    createEvent: (communityId: number, data: Record<string, unknown>) =>
+      request(`/api/community/${communityId}/events`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateEvent: (communityId: number, eventId: number, data: Record<string, unknown>) =>
+      request(`/api/community/${communityId}/events/${eventId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    deleteEvent: (communityId: number, eventId: number) =>
+      request(`/api/community/${communityId}/events/${eventId}`, { method: "DELETE" }),
+    rsvpEvent: (communityId: number, eventId: number) =>
+      request(`/api/community/${communityId}/events/${eventId}/rsvp`, { method: "POST" }),
+    cancelRsvp: (communityId: number, eventId: number) =>
+      request(`/api/community/${communityId}/events/${eventId}/rsvp`, { method: "DELETE" }),
+    // Announcements
+    getAnnouncements: (communityId: number) =>
+      request(`/api/community/${communityId}/announcements`, { method: "GET" }),
+    createAnnouncement: (communityId: number, data: Record<string, unknown>) =>
+      request(`/api/community/${communityId}/announcements`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateAnnouncement: (communityId: number, announcementId: number, data: Record<string, unknown>) =>
+      request(`/api/community/${communityId}/announcements/${announcementId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    deleteAnnouncement: (communityId: number, announcementId: number) =>
+      request(`/api/community/${communityId}/announcements/${announcementId}`, { method: "DELETE" }),
+    // Gallery
+    getGallery: (communityId: number) =>
+      request(`/api/community/${communityId}/gallery`, { method: "GET" }),
+    addGalleryImage: (communityId: number, data: { url: string; caption?: string; category?: string }) =>
+      request(`/api/community/${communityId}/gallery`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    deleteGalleryImage: (communityId: number, imageId: number) =>
+      request(`/api/community/${communityId}/gallery/${imageId}`, { method: "DELETE" }),
+    // Roles
+    getRoles: (communityId: number) =>
+      request(`/api/community/${communityId}/roles`, { method: "GET" }),
+    createRole: (communityId: number, data: { name: string; color?: string; permissions: string[] }) =>
+      request(`/api/community/${communityId}/roles`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateRole: (communityId: number, roleId: number, data: Record<string, unknown>) =>
+      request(`/api/community/${communityId}/roles/${roleId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    deleteRole: (communityId: number, roleId: number) =>
+      request(`/api/community/${communityId}/roles/${roleId}`, { method: "DELETE" }),
+    assignRole: (communityId: number, roleId: number, membershipId: number) =>
+      request(`/api/community/${communityId}/roles/${roleId}/assign`, {
+        method: "POST",
+        body: JSON.stringify({ membershipId }),
+      }),
+    unassignRole: (communityId: number, roleId: number, membershipId: number) =>
+      request(`/api/community/${communityId}/roles/${roleId}/assign`, {
+        method: "DELETE",
+        body: JSON.stringify({ membershipId }),
+      }),
+    // Members
+    getMembers: (communityId: number) =>
+      request(`/api/community/${communityId}/members`, { method: "GET" }),
+    kickMember: (communityId: number, membershipId: number) =>
+      request(`/api/community/${communityId}/members/${membershipId}`, { method: "DELETE" }),
   },
 };

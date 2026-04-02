@@ -14,15 +14,20 @@ datasource db {
 }
 
 model User {
-  id              Int              @id @default(autoincrement())
-  username        String           @unique
-  password        String
-  platformRole    String           @default("GENERAL_USER")
-  sessionVersion  Int              @default(1)
-  interests       Tag[]            @relation("UserInterests")
-  memberships     Membership[]
-  interactions    Interaction[]
-  recommendations Recommendation[]
+  id                    Int              @id @default(autoincrement())
+  username              String           @unique
+  password              String
+  platformRole          String           @default("GENERAL_USER")
+  sessionVersion        Int              @default(1)
+  interests             Tag[]            @relation("UserInterests")
+  memberships           Membership[]
+  interactions          Interaction[]
+  recommendations       Recommendation[]
+  createdEvents         Event[]
+  rsvps                 EventRsvp[]
+  createdAnnouncements  Announcement[]
+  uploadedImages        GalleryImage[]
+  ownedCommunities      CommunityOwner[]
 }
 
 model Community {
@@ -34,6 +39,11 @@ model Community {
   members         Membership[]
   interactions    Interaction[]
   recommendations Recommendation[]
+  events          Event[]
+  announcements   Announcement[]
+  gallery         GalleryImage[]
+  roles           ClubRole[]
+  owner           CommunityOwner?
 }
 
 model Tag {
@@ -44,12 +54,13 @@ model Tag {
 }
 
 model Membership {
-  id          Int       @id @default(autoincrement())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      Int
-  community   Community @relation(fields: [communityId], references: [id])
-  communityId Int
-  joinedAt    DateTime  @default(now())
+  id            Int              @id @default(autoincrement())
+  user          User             @relation(fields: [userId], references: [id])
+  userId        Int
+  community     Community        @relation(fields: [communityId], references: [id])
+  communityId   Int
+  joinedAt      DateTime         @default(now())
+  assignedRoles ClubMemberRole[]
 
   @@unique([userId, communityId])
 }
@@ -77,4 +88,104 @@ model Recommendation {
   community    Community @relation(fields: [communityId], references: [id])
 
   @@unique([userId, communityId])
+}
+
+model Event {
+  id            Int         @id @default(autoincrement())
+  community     Community   @relation(fields: [communityId], references: [id])
+  communityId   Int
+  createdBy     User        @relation(fields: [createdById], references: [id])
+  createdById   Int
+  title         String
+  description   String      @default("")
+  date          DateTime
+  time          String      @default("00:00")
+  locationName  String      @default("")
+  latitude      Float?
+  longitude     Float?
+  eventType     String      @default("General")
+  capacity      Int?
+  status        String      @default("draft")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  rsvps         EventRsvp[]
+}
+
+model EventRsvp {
+  id        Int      @id @default(autoincrement())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model Announcement {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdById   Int
+  title         String
+  description   String    @default("")
+  category      String    @default("news")
+  status        String    @default("draft")
+  pinned        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model GalleryImage {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id])
+  uploadedById  Int
+  url           String
+  caption       String    @default("")
+  category      String    @default("General")
+  createdAt     DateTime  @default(now())
+}
+
+model ClubRole {
+  id            Int                 @id @default(autoincrement())
+  community     Community           @relation(fields: [communityId], references: [id])
+  communityId   Int
+  name          String
+  color         String              @default("#6b7280")
+  createdAt     DateTime            @default(now())
+  permissions   ClubRolePermission[]
+  members       ClubMemberRole[]
+
+  @@unique([communityId, name])
+}
+
+model ClubRolePermission {
+  id          Int      @id @default(autoincrement())
+  clubRole    ClubRole @relation(fields: [clubRoleId], references: [id])
+  clubRoleId  Int
+  permission  String
+
+  @@unique([clubRoleId, permission])
+}
+
+model ClubMemberRole {
+  id            Int        @id @default(autoincrement())
+  membership    Membership @relation(fields: [membershipId], references: [id])
+  membershipId  Int
+  clubRole      ClubRole   @relation(fields: [clubRoleId], references: [id])
+  clubRoleId    Int
+  assignedAt    DateTime   @default(now())
+
+  @@unique([membershipId, clubRoleId])
+}
+
+model CommunityOwner {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int       @unique
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
 }

@@ -1,45 +1,48 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { mockClubs } from "@/mocks/clubs";
 import AnnouncementsPanel from "./components/AnnouncementsPanel";
-import { announcementsData } from "./components/announcementsData";
 import EventsContainer from "./components/events/EventsContainer";
-import {
-  fallbackEvents,
-  type EventData,
-  type EventCoordinates,
-} from "./components/events/eventsData";
+import { type EventData, type EventCoordinates } from "./components/events/eventsData";
 import GalleryGrid from "./components/gallery/GalleryGrid";
-import { galleryData } from "./components/gallery/galleryData";
+import { type GalleryMedia } from "./components/gallery/galleryData";
 import BoardMembersPanel from "./components/board/BoardMembersPanel";
-import { boardSectionsData } from "./components/board/boardData";
 import MainLayout from "./components/shell/MainLayout";
 import { type SocialLink } from "./components/shell/types";
-import { Circle, Facebook, Linkedin, MessageCircle } from "lucide-react";
+import { Circle, Facebook, Linkedin, MessageCircle, Plus } from "lucide-react";
 import ClubAdminPanelButton from "@/components/ClubAdminPanelButton";
+import EventFormModal from "./components/events/EventFormModal";
+import AnnouncementFormModal from "./components/AnnouncementFormModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ClubMember = {
   id: string | number;
   userId: number;
+  user?: { id: number; username: string };
+  assignedRoles?: {
+    clubRole: {
+      id: number;
+      name: string;
+      color: string;
+      permissions?: { permission: string }[];
+    };
+  }[];
 };
 
 type ClubTag = string | { name?: string };
-
-type ClubEvent = {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time?: string;
-  location?: string;
-  type?: string;
-  coordinates?: EventCoordinates;
-};
 
 type ClubData = {
   id: string | number;
@@ -53,263 +56,313 @@ type ClubData = {
   bannerSrc?: string;
   nextMeeting?: string;
   members: ClubMember[];
-  events: ClubEvent[];
   joined?: boolean;
   blurb?: string;
+  owner?: { userId: number } | null;
 };
 
-type ClubPageProps = {
-  club?: Partial<ClubData> | null;
-  events?: ClubEvent[];
+// API response types
+type ApiEvent = {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  locationName: string;
+  latitude: number | null;
+  longitude: number | null;
+  eventType: string;
+  capacity: number | null;
+  status: string;
+  _count: { rsvps: number };
 };
 
-/**
- * Robust Club page client:
- * - uses `club` prop if passed (server can pass it)
- * - otherwise tries to resolve from mocks using the route id param (dev-friendly)
- * - if you later implement GET /api/community/[id] it will try to fetch from API as a fallback
- *
- * Note: the mock ids are strings like "gator-grilling". If your route uses numeric DB ids,
- * you can create a server API that returns community by numeric id (see notes below).
- */
+type ApiAnnouncement = {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  pinned: boolean;
+  createdAt: string;
+};
 
-export default function ClubPageClient({
-  club: clubProp,
-  events: eventsProp,
-}: ClubPageProps) {
-  const params = useParams<{ id: string }>(); // route params object in app router
-  const routeId = params?.id ?? null; // e.g. "gator-grilling" or "1"
+type ApiGalleryImage = {
+  id: number;
+  url: string;
+  caption: string;
+  category: string;
+};
+
+export default function ClubPageClient() {
+  const params = useParams<{ id: string }>();
+  const routeId = params?.id ?? null;
   const { user, hydrated } = useAuth();
   const currentUserId = hydrated && user ? Number(user.id) : null;
 
-  const [club, setClub] = useState<ClubData | null | undefined>(() => {
-    // prefer prop if provided
-    if (clubProp) return mapSidebarMockToClub(clubProp);
-    return undefined;
-  });
-
-  const [events, setEvents] = useState<ClubEvent[] | undefined>(
-    () => eventsProp ?? undefined,
-  );
-  const [joined, setJoined] = useState<boolean>(false);
+  const [club, setClub] = useState<ClubData | null | undefined>(undefined);
+  const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
 
-  function mapSidebarMockToClub(c: Partial<ClubData>) {
-    return {
-      id: c.id ?? "unknown",
-      name: c.name ?? "Untitled Club",
-      description: c.description ?? c.blurb ?? "Club description coming soon.",
-      tags: c.tags ?? [],
-      avatarUrl:
-        c.avatarUrl ?? c.logoSrc ?? c.logo ?? "/avatars/placeholder.png",
-      bannerUrl: c.bannerUrl ?? c.bannerSrc,
-      nextMeeting: c.nextMeeting,
-      members: c.members ?? ([] as ClubMember[]),
-      events: c.events ?? ([] as ClubEvent[]),
-      joined: c.joined,
-      blurb: c.blurb,
-    };
-  }
+  // Real data from API
+  const [events, setEvents] = useState<ApiEvent[]>([]);
+  const [announcements, setAnnouncements] = useState<ApiAnnouncement[]>([]);
+  const [gallery, setGallery] = useState<ApiGalleryImage[]>([]);
 
-  // load club on mount if prop wasn't provided
+  // Modal states
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ApiEvent | null>(null);
+  const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<ApiAnnouncement | null>(null);
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [galleryUrl, setGalleryUrl] = useState("");
+  const [galleryCaption, setGalleryCaption] = useState("");
+
+  const communityId = routeId ? Number(routeId) : 0;
+  const isNumericId = !isNaN(communityId) && communityId > 0;
+
+  // Permission resolution
+  const isSuperAdmin = user?.platformRole === "SUPER_ADMIN";
+  const isOwner = isSuperAdmin || Boolean(club?.owner && currentUserId && club.owner.userId === currentUserId);
+  const userPermissions = React.useMemo(() => {
+    if (!club || !currentUserId) return [] as string[];
+    if (isOwner) return ["canManageEvents", "canManageAnnouncements", "canManageGallery", "canManageRoster", "canManageRoles", "canManageSettings"];
+    const membership = club.members.find(m => Number(m.userId) === currentUserId);
+    if (!membership?.assignedRoles) return [] as string[];
+    const perms = new Set<string>();
+    for (const ar of membership.assignedRoles) {
+      if (ar.clubRole.permissions) {
+        for (const p of ar.clubRole.permissions) {
+          perms.add(p.permission);
+        }
+      }
+    }
+    return Array.from(perms);
+  }, [club, currentUserId, isOwner]);
+
+  const canManageEvents = isOwner || userPermissions.includes("canManageEvents");
+  const canManageAnnouncements = isOwner || userPermissions.includes("canManageAnnouncements");
+  const canManageGallery = isOwner || userPermissions.includes("canManageGallery");
+
+  // Load club data
   useEffect(() => {
+    if (!routeId) return;
     let mounted = true;
+
     async function load() {
+      if (!isNumericId) {
+        setClub(null);
+        return;
+      }
+
       try {
-        console.log("[ClubPage] routeId:", routeId, "clubProp:", !!clubProp);
-
-        if (clubProp) {
-          console.log("[ClubPage] using passed club prop");
-          setClub(clubProp);
-          // compute joined from members if possible
-          setJoined(
-            Boolean(
-              clubProp?.members?.some(
-                (m) => Number(m.userId) === Number(currentUserId),
-              ),
-            ),
-          );
-          return;
-        }
-
-        // 1) Try to find mock by id (string slug)
-        if (routeId) {
-          const bySidebarId = mockClubs.find((d) => d.id === String(routeId));
-          if (bySidebarId) {
-            console.log(
-              "[ClubPage] found sidebar mock club by id:",
-              bySidebarId.name,
-            );
-            const mapped = mapSidebarMockToClub(bySidebarId);
-            if (!mounted) return;
-            setClub(mapped);
-            setEvents(mapped.events || []);
-            setJoined(
-              Boolean(
-                mapped.members?.some(
-                  (m) => Number(m.userId) === Number(currentUserId),
-                ),
-              ),
-            );
-            return;
-          }
-
-          // 2) If routeId is numeric, try to hit API (if backend route exists)
-          const maybeNum = Number(routeId);
-          if (!Number.isNaN(maybeNum)) {
-            try {
-              console.log(
-                "[ClubPage] routeId looks numeric, attempting API fetch /api/community/get?id=",
-                maybeNum,
-              );
-              const res = await fetch(`/api/community/get?id=${maybeNum}`);
-              if (!res.ok)
-                throw new Error("no api route /api/community/get or not found");
-              const data = (await res.json()) as Partial<ClubData>;
-              if (!mounted) return;
-              console.log("[ClubPage] fetched community from API:", data);
-              const normalized = mapSidebarMockToClub(data);
-              setClub(normalized);
-              setEvents(normalized.events || []);
-              setJoined(
-                Boolean(
-                  normalized.members?.some(
-                    (m) => Number(m.userId) === Number(currentUserId),
-                  ),
-                ),
-              );
-              return;
-            } catch (e) {
-              console.warn(
-                "[ClubPage] API fetch for numeric id failed (this is optional)",
-                e,
-              );
-            }
-          }
-        }
-
-        // 3) fallback: if nothing found, set club to null to show not found
-        if (mounted) {
-          console.warn("[ClubPage] club not found for routeId:", routeId);
-          setClub(null); // explicit not found
-        }
-      } catch (err) {
-        console.error("[ClubPage] load error", err);
+        const res = await fetch(`/api/community/get?id=${communityId}`);
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        if (!mounted) return;
+        setClub({
+          id: data.id,
+          name: data.name ?? "Untitled Club",
+          description: data.description ?? "",
+          tags: data.tags ?? [],
+          avatarUrl: data.avatarUrl,
+          members: data.members ?? [],
+          owner: data.owner ?? null,
+        });
+        setJoined(Boolean(data.members?.some((m: ClubMember) => Number(m.userId) === Number(currentUserId))));
+      } catch {
         if (mounted) setClub(null);
       }
     }
 
     load();
-    return () => {
-      mounted = false;
-    };
-  }, [routeId, clubProp, currentUserId]);
+    return () => { mounted = false; };
+  }, [routeId, communityId, isNumericId, currentUserId]);
 
-  // keep joined in sync when club or currentUserId changes
-  useEffect(() => {
+  // Load content data
+  const loadEvents = useCallback(async () => {
+    if (!isNumericId) return;
     try {
-      if (!club) {
-        setJoined(false);
-        return;
-      }
-      setJoined(
-        Boolean(
-          club?.members?.some(
-            (m) => Number(m.userId) === Number(currentUserId),
-          ),
-        ),
-      );
-    } catch {
-      setJoined(Boolean(club?.joined));
-    }
-  }, [club, currentUserId]);
+      const data = await api.community.getEvents(communityId) as unknown as ApiEvent[];
+      setEvents(data);
+    } catch (e) { console.warn("Failed to load events", e); }
+  }, [communityId, isNumericId]);
+
+  const loadAnnouncements = useCallback(async () => {
+    if (!isNumericId) return;
+    try {
+      const data = await api.community.getAnnouncements(communityId) as unknown as ApiAnnouncement[];
+      setAnnouncements(data);
+    } catch (e) { console.warn("Failed to load announcements", e); }
+  }, [communityId, isNumericId]);
+
+  const loadGallery = useCallback(async () => {
+    if (!isNumericId) return;
+    try {
+      const data = await api.community.getGallery(communityId) as unknown as ApiGalleryImage[];
+      setGallery(data);
+    } catch (e) { console.warn("Failed to load gallery", e); }
+  }, [communityId, isNumericId]);
+
+  useEffect(() => {
+    loadEvents();
+    loadAnnouncements();
+    loadGallery();
+  }, [loadEvents, loadAnnouncements, loadGallery]);
+
+  // Event handlers
+  const handleCreateEvent = async (form: { title: string; description: string; date: string; time: string; locationName: string; eventType: string; capacity: string; status: string }) => {
+    await api.community.createEvent(communityId, {
+      title: form.title,
+      description: form.description,
+      date: form.date,
+      time: form.time,
+      locationName: form.locationName,
+      eventType: form.eventType,
+      capacity: form.capacity ? Number(form.capacity) : null,
+      status: form.status,
+    });
+    await loadEvents();
+  };
+
+  const handleUpdateEvent = async (form: { title: string; description: string; date: string; time: string; locationName: string; eventType: string; capacity: string; status: string }) => {
+    if (!editingEvent) return;
+    await api.community.updateEvent(communityId, editingEvent.id, {
+      title: form.title,
+      description: form.description,
+      date: form.date,
+      time: form.time,
+      locationName: form.locationName,
+      eventType: form.eventType,
+      capacity: form.capacity ? Number(form.capacity) : null,
+      status: form.status,
+    });
+    setEditingEvent(null);
+    await loadEvents();
+  };
+
+  const handleDeleteEvent = async (eventId: number) => {
+    if (!confirm("Delete this event?")) return;
+    await api.community.deleteEvent(communityId, eventId);
+    await loadEvents();
+  };
+
+  const handleCreateAnnouncement = async (form: { title: string; description: string; category: string; status: string }) => {
+    await api.community.createAnnouncement(communityId, form);
+    await loadAnnouncements();
+  };
+
+  const handleUpdateAnnouncement = async (form: { title: string; description: string; category: string; status: string }) => {
+    if (!editingAnnouncement) return;
+    await api.community.updateAnnouncement(communityId, editingAnnouncement.id, form);
+    setEditingAnnouncement(null);
+    await loadAnnouncements();
+  };
+
+  const handleDeleteAnnouncement = async (id: number) => {
+    if (!confirm("Delete this announcement?")) return;
+    await api.community.deleteAnnouncement(communityId, id);
+    await loadAnnouncements();
+  };
+
+  const handleTogglePin = async (id: number, currentPinned: boolean) => {
+    await api.community.updateAnnouncement(communityId, id, { pinned: !currentPinned });
+    await loadAnnouncements();
+  };
+
+  const handleAddGalleryImage = async () => {
+    if (!galleryUrl.trim()) return;
+    await api.community.addGalleryImage(communityId, { url: galleryUrl, caption: galleryCaption });
+    setGalleryUrl("");
+    setGalleryCaption("");
+    setGalleryModalOpen(false);
+    await loadGallery();
+  };
+
+  const handleDeleteGalleryImage = async (id: number) => {
+    if (!confirm("Delete this image?")) return;
+    await api.community.deleteGalleryImage(communityId, id);
+    await loadGallery();
+  };
 
   const handleJoin = async () => {
-    if (!currentUserId) return;
-    if (joined) return;
+    if (!currentUserId || joined) return;
     setJoining(true);
-
-    // If this is a mock (no numeric DB id), just simulate join in UI
-    const isMock =
-      club && typeof club.id === "string" && isNaN(Number(club.id));
-
     try {
-      if (isMock) {
-        console.log("[ClubPage] mock join simulated for club:", club.name);
-        // update local state: append a fake member
-        const fakeMember = {
-          id: `m-${Date.now()}`,
-          userId: Number(currentUserId),
-        };
-        const newClub = {
-          ...club,
-          members: [...(club.members || []), fakeMember],
-        };
-        setClub(newClub);
-        setJoined(true);
-        // optionally persist to some mock store or show toast
-      } else {
-        // assume numeric DB id -> call backend
-        console.log("[ClubPage] calling api.user.joinCommunity", {
-          userId: currentUserId,
-          communityId: club.id,
-        });
-        await api.user.joinCommunity(Number(currentUserId), Number(club.id));
-        // optimistic update
-        const newClub = {
-          ...club,
-          members: [
-            ...(club.members || []),
-            { id: `m-${Date.now()}`, userId: Number(currentUserId) },
-          ],
-        };
-        setClub(newClub);
-        setJoined(true);
-      }
-    } catch (err) {
-      console.error("Failed to join", err);
-    } finally {
-      setJoining(false);
-    }
+      await api.user.joinCommunity(Number(currentUserId), communityId);
+      setJoined(true);
+      setClub(prev => prev ? {
+        ...prev,
+        members: [...(prev.members || []), { id: `m-${Date.now()}`, userId: currentUserId }],
+      } : prev);
+    } catch (err) { console.error("Failed to join", err); }
+    finally { setJoining(false); }
   };
-  // Render states:
-  if (club === undefined) {
-    // still loading
-    return <div>Loading club…</div>;
-  }
 
-  if (club === null) {
-    // not found
-    return (
-      <div className="p-6">
-        <h2 className="text-lg font-semibold">Club not found</h2>
-        <p className="text-sm text-muted-foreground">
-          We could not find that club. Try browsing the Discovery page.
-        </p>
-      </div>
-    );
-  }
+  // Render
+  if (club === undefined) return <div>Loading club...</div>;
+  if (club === null) return (
+    <div className="p-6">
+      <h2 className="text-lg font-semibold">Club not found</h2>
+      <p className="text-sm text-muted-foreground">We could not find that club.</p>
+    </div>
+  );
 
-  // safe reads using optional chaining
   const logoSrc = club.avatarUrl ?? club.logoSrc ?? "/avatars/placeholder.png";
-  const clubName = club.name ?? "Untitled Club";
-  const clubDesc = club.description ?? "Club description coming soon.";
-  const clubTags = club.tags ?? [];
+  const clubName = club.name;
+  const clubDesc = club.description;
+  const clubTags = club.tags;
 
-  const activeEvents = (events || club.events || []).slice(0, 6);
-  const normalizedEvents: EventData[] =
-    activeEvents.length > 0
-      ? activeEvents.map((event) => ({
-          id: String(event.id),
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          time: event.time || "00:00",
-          locationName: event.location || "TBD",
-          coordinates: event.coordinates,
-          eventType: event.type || "General",
-        }))
-      : fallbackEvents;
+  // Normalize events for EventsContainer
+  const normalizedEvents: EventData[] = events.map((e) => ({
+    id: String(e.id),
+    title: e.title,
+    description: e.description,
+    date: typeof e.date === 'string' ? e.date.split('T')[0] : new Date(e.date).toISOString().split('T')[0],
+    time: e.time || "00:00",
+    locationName: e.locationName || "TBD",
+    coordinates: (e.latitude && e.longitude) ? { lat: e.latitude, lng: e.longitude } as EventCoordinates : undefined,
+    eventType: e.eventType || "General",
+  }));
+
+  // Normalize announcements for AnnouncementsPanel
+  const normalizedAnnouncements = announcements.map((a) => {
+    const d = new Date(a.createdAt);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    return {
+      id: String(a.id),
+      dayLabel: isToday ? "Today" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      timeLabel: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+      title: a.title,
+      description: a.description,
+      category: a.category as "news" | "events",
+      pinned: a.pinned,
+    };
+  });
+
+  // Normalize gallery for GalleryGrid
+  const normalizedGallery: GalleryMedia[] = gallery.map((g) => ({
+    id: String(g.id),
+    src: g.url,
+    type: "image" as const,
+    category: g.category,
+    alt: g.caption || "Gallery image",
+    caption: g.caption,
+  }));
+
+  // Board members from club.members with roles
+  const boardSections = [{
+    id: "members",
+    title: "Club Members",
+    members: club.members
+      .filter(m => m.assignedRoles && m.assignedRoles.length > 0)
+      .map(m => ({
+        id: String(m.id),
+        name: m.user?.username ?? "Unknown",
+        role: m.assignedRoles?.map(ar => ar.clubRole.name).join(", ") ?? "Member",
+      })),
+  }];
 
   const socialLinks: SocialLink[] = [
     { id: "social-linkedin", name: "LinkedIn", href: "#", icon: Linkedin },
@@ -318,14 +371,16 @@ export default function ClubPageClient({
     { id: "social-discord", name: "Discord", href: "#", icon: MessageCircle },
   ];
 
-  const upcomingMeetings = activeEvents.slice(0, 2).map((event) => ({
-    id: String(event.id),
-    title: event.title,
-    date: event.date,
-    time: event.time,
-    locationName: event.location || "TBD",
-    coordinates: event.coordinates,
+  const upcomingMeetings = normalizedEvents.slice(0, 2).map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.date,
+    time: e.time,
+    locationName: e.locationName,
+    coordinates: e.coordinates,
   }));
+
+  const tabStyle = "rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none";
 
   return (
     <MainLayout
@@ -343,48 +398,127 @@ export default function ClubPageClient({
     >
       <Tabs defaultValue="announcements" className="w-full">
         <TabsList className="h-auto w-full justify-start gap-2 rounded-none border-b border-gray-300 bg-transparent p-0">
-          <TabsTrigger
-            value="announcements"
-            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-          >
-            Announcements
-          </TabsTrigger>
-          <TabsTrigger
-            value="events"
-            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-          >
-            Events
-          </TabsTrigger>
-          <TabsTrigger
-            value="gallery"
-            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-          >
-            Gallery
-          </TabsTrigger>
-          <TabsTrigger
-            value="members"
-            className="rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none"
-          >
-            Board Members
-          </TabsTrigger>
+          <TabsTrigger value="announcements" className={tabStyle}>Announcements</TabsTrigger>
+          <TabsTrigger value="events" className={tabStyle}>Events</TabsTrigger>
+          <TabsTrigger value="gallery" className={tabStyle}>Gallery</TabsTrigger>
+          <TabsTrigger value="members" className={tabStyle}>Board Members</TabsTrigger>
         </TabsList>
 
         <TabsContent value="announcements">
-          <AnnouncementsPanel announcements={announcementsData} />
+          {canManageAnnouncements && (
+            <div className="mt-2 mb-2">
+              <Button onClick={() => { setEditingAnnouncement(null); setAnnouncementModalOpen(true); }} className="bg-orange-500 text-white hover:bg-orange-600">
+                <Plus className="mr-1 h-4 w-4" /> New Announcement
+              </Button>
+            </div>
+          )}
+          <AnnouncementsPanel
+            announcements={normalizedAnnouncements}
+            canEdit={canManageAnnouncements}
+            onEdit={(id) => {
+              const a = announcements.find(x => x.id === Number(id));
+              if (a) { setEditingAnnouncement(a); setAnnouncementModalOpen(true); }
+            }}
+            onDelete={(id) => handleDeleteAnnouncement(Number(id))}
+            onTogglePin={(id, pinned) => handleTogglePin(Number(id), pinned)}
+          />
         </TabsContent>
 
         <TabsContent value="events">
-          <EventsContainer events={normalizedEvents} />
+          {canManageEvents && (
+            <div className="mt-2 mb-2">
+              <Button onClick={() => { setEditingEvent(null); setEventModalOpen(true); }} className="bg-orange-500 text-white hover:bg-orange-600">
+                <Plus className="mr-1 h-4 w-4" /> Add Event
+              </Button>
+            </div>
+          )}
+          <EventsContainer
+            events={normalizedEvents}
+            canEdit={canManageEvents}
+            onEditEvent={(id) => {
+              const e = events.find(x => x.id === Number(id));
+              if (e) { setEditingEvent(e); setEventModalOpen(true); }
+            }}
+            onDeleteEvent={(id) => handleDeleteEvent(Number(id))}
+          />
         </TabsContent>
 
         <TabsContent value="gallery">
-          <GalleryGrid items={galleryData} />
+          {canManageGallery && (
+            <div className="mt-2 mb-2">
+              <Button onClick={() => setGalleryModalOpen(true)} className="bg-orange-500 text-white hover:bg-orange-600">
+                <Plus className="mr-1 h-4 w-4" /> Add Image
+              </Button>
+            </div>
+          )}
+          <GalleryGrid
+            items={normalizedGallery}
+            canDelete={canManageGallery}
+            onDelete={(id) => handleDeleteGalleryImage(Number(id))}
+          />
         </TabsContent>
 
         <TabsContent value="members">
-          <BoardMembersPanel sections={boardSectionsData} />
+          <BoardMembersPanel sections={boardSections} />
         </TabsContent>
       </Tabs>
+
+      {/* Event Form Modal */}
+      <EventFormModal
+        key={editingEvent ? `edit-${editingEvent.id}` : "create"}
+        open={eventModalOpen}
+        onOpenChange={(open) => { setEventModalOpen(open); if (!open) setEditingEvent(null); }}
+        title={editingEvent ? "Edit Event" : "Add Event"}
+        initialData={editingEvent ? {
+          title: editingEvent.title,
+          description: editingEvent.description,
+          date: typeof editingEvent.date === 'string' ? editingEvent.date.split('T')[0] : new Date(editingEvent.date).toISOString().split('T')[0],
+          time: editingEvent.time,
+          locationName: editingEvent.locationName,
+          eventType: editingEvent.eventType,
+          capacity: editingEvent.capacity?.toString() ?? "",
+          status: editingEvent.status,
+        } : undefined}
+        onSubmit={editingEvent ? handleUpdateEvent : handleCreateEvent}
+      />
+
+      {/* Announcement Form Modal */}
+      <AnnouncementFormModal
+        key={editingAnnouncement ? `edit-${editingAnnouncement.id}` : "create-ann"}
+        open={announcementModalOpen}
+        onOpenChange={(open) => { setAnnouncementModalOpen(open); if (!open) setEditingAnnouncement(null); }}
+        title={editingAnnouncement ? "Edit Announcement" : "New Announcement"}
+        initialData={editingAnnouncement ? {
+          title: editingAnnouncement.title,
+          description: editingAnnouncement.description,
+          category: editingAnnouncement.category,
+          status: editingAnnouncement.status,
+        } : undefined}
+        onSubmit={editingAnnouncement ? handleUpdateAnnouncement : handleCreateAnnouncement}
+      />
+
+      {/* Gallery Image Modal */}
+      <Dialog open={galleryModalOpen} onOpenChange={setGalleryModalOpen}>
+        <DialogContent className="max-w-sm gap-0 overflow-hidden rounded-xl border-stone-200 p-0 shadow-xl">
+          <DialogHeader className="border-b border-stone-100 px-5 py-4">
+            <DialogTitle className="text-base font-semibold text-stone-900">Add Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 px-5 py-4">
+            <div>
+              <Label className="block text-xs font-medium text-stone-600 mb-1">Image URL <span className="text-red-500">*</span></Label>
+              <Input value={galleryUrl} onChange={(e) => setGalleryUrl(e.target.value)} placeholder="https://..." className="h-9 rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-colors" />
+            </div>
+            <div>
+              <Label className="block text-xs font-medium text-stone-600 mb-1">Caption</Label>
+              <Input value={galleryCaption} onChange={(e) => setGalleryCaption(e.target.value)} placeholder="Optional caption" className="h-9 rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-colors" />
+            </div>
+          </div>
+          <DialogFooter className="border-t border-stone-100 px-5 py-3 bg-stone-50/50">
+            <Button variant="outline" onClick={() => setGalleryModalOpen(false)} className="h-9 rounded-md border-stone-300 text-sm text-stone-600 hover:bg-stone-100">Cancel</Button>
+            <Button onClick={handleAddGalleryImage} disabled={!galleryUrl.trim()} className="h-9 rounded-md bg-orange-600 text-sm font-medium text-white hover:bg-orange-700 disabled:bg-stone-300 disabled:text-stone-500">Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

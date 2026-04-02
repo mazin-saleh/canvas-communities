@@ -1,6 +1,11 @@
+"use client";
+
 import React from "react";
-import AdminSidebar from "./AdminSidebar";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { adminTheme } from "./adminTheme";
+import { useClubAdmin } from "../[clubId]/ClubAdminContext";
 
 type AdminLayoutProps = {
   clubId: string;
@@ -9,10 +14,49 @@ type AdminLayoutProps = {
   children: React.ReactNode;
 };
 
-export default function AdminLayout({ clubId, title, subtitle, children }: AdminLayoutProps) {
+type TabItem = {
+  label: string;
+  href: string;
+  matchPrefix: string;
+  visible: boolean;
+};
+
+export default function AdminLayout({ clubId, children }: AdminLayoutProps) {
+  const pathname = usePathname();
+  const { club, isOwner, userPermissions } = useClubAdmin();
+
+  const tabs: TabItem[] = [
+    {
+      label: "General Info",
+      href: `/club-admin/${clubId}/general-info`,
+      matchPrefix: `/club-admin/${clubId}/general-info`,
+      visible: true,
+    },
+    {
+      label: "Roster",
+      href: `/club-admin/${clubId}/roster`,
+      matchPrefix: `/club-admin/${clubId}/roster`,
+      visible: isOwner || userPermissions.includes("canManageRoster"),
+    },
+    {
+      label: "Roles",
+      href: `/club-admin/${clubId}/roles`,
+      matchPrefix: `/club-admin/${clubId}/roles`,
+      visible: isOwner,
+    },
+    {
+      label: "Settings",
+      href: `/club-admin/${clubId}/settings`,
+      matchPrefix: `/club-admin/${clubId}/settings`,
+      visible: isOwner,
+    },
+  ];
+
+  const visibleTabs = tabs.filter((t) => t.visible);
+
   return (
-    <section
-      className="min-h-full bg-[var(--admin-shell-bg)] p-3 sm:p-4 lg:p-6"
+    <div
+      className="min-h-screen bg-[var(--admin-shell-bg)]"
       style={
         {
           "--admin-brand-orange": adminTheme.colors.brandOrange,
@@ -25,28 +69,64 @@ export default function AdminLayout({ clubId, title, subtitle, children }: Admin
         } as React.CSSProperties
       }
     >
-      <header className="overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-white">
-        <div
-          className="h-2 w-full"
-          style={{
-            backgroundImage: adminTheme.headerGradient,
-          }}
-        />
-        <div className="px-4 py-4 sm:px-5 sm:py-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-brand-teal)]">
-            Club Management
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-          {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
+      {/* Compact header */}
+      <header className="border-b border-[var(--admin-border)] bg-white">
+        <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
+          <Link
+            href={`/club/${clubId}`}
+            className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors hover:text-stone-800"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to club
+          </Link>
+          <div className="flex items-center gap-3">
+            {club?.avatarUrl && (
+              <img
+                src={club.avatarUrl}
+                alt=""
+                className="h-9 w-9 rounded-lg object-cover"
+              />
+            )}
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight text-stone-900">
+                {club?.name ?? "Club Admin"}
+              </h1>
+              <p className="text-xs text-stone-500">Admin Panel</p>
+            </div>
+          </div>
         </div>
+
+        {/* Tab navigation */}
+        <nav className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="-mb-px flex gap-1">
+            {visibleTabs.map((tab) => {
+              const isActive =
+                pathname === tab.href ||
+                pathname.startsWith(`${tab.matchPrefix}/`);
+
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={[
+                    "border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "border-[var(--admin-brand-orange)] text-[var(--admin-brand-orange)]"
+                      : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </header>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
-        <AdminSidebar clubId={clubId} />
-        <div className="min-w-0 rounded-2xl border border-[var(--admin-border)] bg-white p-4 shadow-sm sm:p-5">
-          {children}
-        </div>
-      </div>
-    </section>
+      {/* Content */}
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        {children}
+      </main>
+    </div>
   );
 }

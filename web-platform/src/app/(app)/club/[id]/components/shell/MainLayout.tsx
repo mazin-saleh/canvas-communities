@@ -63,7 +63,7 @@ export default function MainLayout({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[270px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
           <ClubSidebar
             logoSrc={logoSrc}
             clubName={clubName}

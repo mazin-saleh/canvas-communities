@@ -36,6 +36,7 @@ type ClubRole = "club_owner" | "club_admin" | "member";
 type RoleContextValue = {
   hydrated: boolean;
   loading: boolean;
+  roleReady: boolean;
   platformRole: string | null;
   clubs: ClubAccess[];
   isSuperAdmin: boolean;
@@ -58,6 +59,7 @@ function parseClubId(clubId: string | number): number {
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const { user, hydrated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [roleReady, setRoleReady] = useState(false);
   const [platformRole, setPlatformRole] = useState<string | null>(null);
   const [clubs, setClubs] = useState<ClubAccess[]>([]);
 
@@ -79,6 +81,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       setClubs([]);
     } finally {
       setLoading(false);
+      setRoleReady(true);
     }
   }, [user]);
 
@@ -114,6 +117,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     return {
       hydrated,
       loading,
+      roleReady,
       platformRole,
       clubs,
       isSuperAdmin,
@@ -146,7 +150,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       },
       refresh,
     };
-  }, [clubs, hydrated, loading, platformRole, refresh]);
+  }, [clubs, hydrated, loading, platformRole, refresh, roleReady]);
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }

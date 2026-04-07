@@ -4,11 +4,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-type Props = {
-  maxHeight?: number | undefined;
-};
-
-export default function EventsYouMightLike({ maxHeight }: Props) {
+export default function EventsYouMightLike() {
   const { user, hydrated } = useAuth();
   const [clubs, setClubs] = useState<any[]>([]);
 
@@ -20,13 +16,8 @@ export default function EventsYouMightLike({ maxHeight }: Props) {
       .catch(() => {});
   }, [hydrated, user]);
 
-  const style = maxHeight ? { maxHeight: `${maxHeight}px` } : undefined;
-
   return (
-    <div
-      className="sticky top-8 overflow-y-auto space-y-4 rounded-2xl bg-white p-5 shadow-sm"
-      style={style}
-    >
+    <div className="overflow-y-auto max-h-[calc(100vh-8rem)] space-y-3 rounded-2xl bg-white p-4 shadow-sm border border-slate-100">
       <h3 className="text-sm font-semibold text-slate-900">Top picks for you</h3>
 
       {clubs.length === 0 ? (
@@ -35,14 +26,14 @@ export default function EventsYouMightLike({ maxHeight }: Props) {
         clubs.map((c: any) => (
           <div
             key={c.id}
-            className="rounded-xl border p-3 text-xs hover:bg-slate-50 transition"
+            className="rounded-xl border border-slate-100 p-3 text-xs hover:bg-slate-50 transition"
           >
-            <p className="font-semibold">{c.name}</p>
-            <p className="text-slate-500 line-clamp-1">
+            <p className="font-semibold text-slate-900">{c.name}</p>
+            <p className="text-slate-500 line-clamp-1 mt-0.5">
               {c.description || "No description"}
             </p>
             {c.tags && (
-              <p className="mt-1 text-orange-500 font-medium">
+              <p className="mt-1.5 text-orange-500 font-medium">
                 {c.tags
                   .slice(0, 3)
                   .map((t: any) => t.name || t)

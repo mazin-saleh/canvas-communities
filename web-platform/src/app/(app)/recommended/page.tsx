@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import PageHeader from "@/components/PageHeader";
-import ClubCard from "@/components/ClubCard";
+import RecommendedClubCard from "@/components/RecommendedClubCard";
 import { Club } from "@/mocks/clubs";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -14,7 +13,6 @@ export default function RecommendedPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Wait for auth to hydrate and user to be available
     if (!hydrated || !user) return;
 
     async function fetchRecommendations() {
@@ -28,7 +26,6 @@ export default function RecommendedPage() {
           memberships.map((m: any) => m.communityId ?? m.community?.id)
         );
 
-        // Transform API response to match Club type expected by ClubCard
         const transformed: Club[] = data.map((c: any) => ({
           id: String(c.id),
           name: c.name,
@@ -49,59 +46,77 @@ export default function RecommendedPage() {
     fetchRecommendations();
   }, [hydrated, user]);
 
-  // Show loading while auth hydrates
   if (!hydrated || loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Your Personalized Recommendations"
-          subtitle="Loading your recommendations..."
-        />
+      <div className="flex flex-col gap-5 px-5 pt-5">
+        <header>
+          <h1 className="font-[family-name:var(--font-anybody)] text-3xl md:text-5xl font-black text-green-600">
+            Your Personalized Recommendations.
+          </h1>
+          <p className="font-[family-name:var(--font-ibm)] text-lg md:text-2xl text-black mt-1">
+            Loading your recommendations...
+          </p>
+        </header>
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
-  // No user logged in
   if (!user) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Your Personalized Recommendations"
-          subtitle="Please log in to see your recommendations"
-        />
+      <div className="flex flex-col gap-5 px-5 pt-5">
+        <header>
+          <h1 className="font-[family-name:var(--font-anybody)] text-3xl md:text-5xl font-black text-green-600">
+            Your Personalized Recommendations.
+          </h1>
+          <p className="font-[family-name:var(--font-ibm)] text-lg md:text-2xl text-black mt-1">
+            Please log in to see your recommendations.
+          </p>
+        </header>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Your Personalized Recommendations"
-          subtitle="Something went wrong"
-        />
+      <div className="flex flex-col gap-5 px-5 pt-5">
+        <header>
+          <h1 className="font-[family-name:var(--font-anybody)] text-3xl md:text-5xl font-black text-green-600">
+            Your Personalized Recommendations.
+          </h1>
+          <p className="font-[family-name:var(--font-ibm)] text-lg md:text-2xl text-black mt-1">
+            Something went wrong.
+          </p>
+        </header>
         <div className="text-center py-8 text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Your Personalized Recommendations"
-        subtitle="We've hand-picked these clubs just for you based on your interests."
-      />
+    <div className="px-5 pt-5">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-10 pb-4">
+        <h1 className="font-[family-name:var(--font-anybody)] text-3xl md:text-5xl font-black text-green-600">
+          Your Personalized Recommendations.
+        </h1>
+        <p className="font-[family-name:var(--font-ibm)] text-lg md:text-2xl text-black mt-1">
+          {"We've hand-picked these clubs just for you based on your interests."}
+        </p>
+      </header>
 
+      {/* Card Grid */}
       {clubs.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="text-center py-8 text-muted-foreground font-[family-name:var(--font-ibm)]">
           No recommendations yet. Try adding some interests!
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clubs.map((c) => (
-            <ClubCard key={c.id} club={c} />
-          ))}
+        <div className="py-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clubs.map((c) => (
+              <RecommendedClubCard key={c.id} club={c} />
+            ))}
+          </div>
         </div>
       )}
     </div>

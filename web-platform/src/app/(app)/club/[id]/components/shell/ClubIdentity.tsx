@@ -8,7 +8,9 @@ type ClubIdentityProps = {
   clubTags: Array<string | { name?: string }>;
   joined: boolean;
   joining: boolean;
+  leaving: boolean;
   onJoin: () => void;
+  onLeave: () => void;
 };
 
 export default function ClubIdentity({
@@ -17,7 +19,9 @@ export default function ClubIdentity({
   clubDesc,
   joined,
   joining,
+  leaving,
   onJoin,
+  onLeave,
 }: ClubIdentityProps) {
   return (
     <section className="relative z-10">
@@ -41,15 +45,15 @@ export default function ClubIdentity({
 
       <Button
         variant={joined ? "outline" : "default"}
-        onClick={onJoin}
-        disabled={joining}
+        onClick={joined ? onLeave : onJoin}
+        disabled={joining || leaving}
         className={`mt-5 h-10 w-full cursor-pointer rounded-full text-sm font-semibold ${
           joined
-            ? "border-2 border-[var(--club-brand-orange)] text-[var(--club-brand-orange)] hover:bg-orange-50"
+            ? "border-2 border-[var(--club-brand-orange)] text-[var(--club-brand-orange)] hover:bg-red-50 hover:border-red-500 hover:text-red-500"
             : "bg-[var(--club-brand-orange)] text-white hover:bg-[var(--club-brand-orange-hover)]"
         }`}
       >
-        {joined ? "✓ Joined" : joining ? "Joining..." : "Join"}
+        {leaving ? "Leaving..." : joined ? "✓ Joined" : joining ? "Joining..." : "Join"}
       </Button>
     </section>
   );

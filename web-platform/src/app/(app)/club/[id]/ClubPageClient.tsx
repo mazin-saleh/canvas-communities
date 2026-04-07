@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useRole } from "@/context/RoleContext";
 import AnnouncementsPanel from "./components/AnnouncementsPanel";
 import EventsContainer from "./components/events/EventsContainer";
 import { type EventData, type EventCoordinates } from "./components/events/eventsData";
@@ -98,11 +99,13 @@ export default function ClubPageClient() {
   const params = useParams<{ id: string }>();
   const routeId = params?.id ?? null;
   const { user, hydrated } = useAuth();
+  const { refresh } = useRole();
   const currentUserId = hydrated && user ? Number(user.id) : null;
 
   const [club, setClub] = useState<ClubData | null | undefined>(undefined);
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   // Real data from API
   const [events, setEvents] = useState<ApiEvent[]>([]);
@@ -295,8 +298,24 @@ export default function ClubPageClient() {
         ...prev,
         members: [...(prev.members || []), { id: `m-${Date.now()}`, userId: currentUserId }],
       } : prev);
+      refresh();
     } catch (err) { console.error("Failed to join", err); }
     finally { setJoining(false); }
+  };
+
+  const handleLeave = async () => {
+    if (!currentUserId || !joined) return;
+    setLeaving(true);
+    try {
+      await api.user.leaveCommunity(Number(currentUserId), communityId);
+      setJoined(false);
+      setClub(prev => prev ? {
+        ...prev,
+        members: (prev.members || []).filter((m: ClubMember) => Number(m.userId) !== Number(currentUserId)),
+      } : prev);
+      refresh();
+    } catch (err) { console.error("Failed to leave", err); }
+    finally { setLeaving(false); }
   };
 
   // Render
@@ -391,7 +410,9 @@ export default function ClubPageClient() {
       clubTags={clubTags}
       joined={joined}
       joining={joining}
+      leaving={leaving}
       onJoin={handleJoin}
+      onLeave={handleLeave}
       socialLinks={socialLinks}
       upcomingMeetings={upcomingMeetings}
       headerOverlayAction={<ClubAdminPanelButton clubId={club.id} />}

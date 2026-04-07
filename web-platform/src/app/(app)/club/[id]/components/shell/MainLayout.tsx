@@ -14,7 +14,9 @@ type MainLayoutProps = {
   clubTags: Array<string | { name?: string }>;
   joined: boolean;
   joining: boolean;
+  leaving: boolean;
   onJoin: () => void;
+  onLeave: () => void;
   socialLinks: SocialLink[];
   upcomingMeetings?: MeetingItem[];
   children: React.ReactNode;
@@ -30,7 +32,9 @@ export default function MainLayout({
   clubTags,
   joined,
   joining,
+  leaving,
   onJoin,
+  onLeave,
   socialLinks,
   upcomingMeetings,
   children,
@@ -71,7 +75,9 @@ export default function MainLayout({
             clubTags={clubTags}
             joined={joined}
             joining={joining}
+            leaving={leaving}
             onJoin={onJoin}
+            onLeave={onLeave}
             socialLinks={socialLinks}
             upcomingMeetings={upcomingMeetings}
           />

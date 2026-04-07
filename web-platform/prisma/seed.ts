@@ -26,6 +26,8 @@ async function main() {
   await prisma.event.deleteMany({});
   await prisma.tag.deleteMany({});
   await prisma.user.deleteMany({});
+  await prisma.clubRolePermission.deleteMany({});
+  await prisma.clubRole.deleteMany({});
   await prisma.community.deleteMany({});
 
   // Reset sequences so IDs start from 1

@@ -36,8 +36,10 @@ type ActivityItem = {
 type UpcomingEvent = {
   id: number;
   title: string;
+  description: string;
+  date: string;
   time: string;
-  location: string;
+  locationName: string;
   community: {
     id: number;
     name: string;
@@ -121,12 +123,20 @@ function formatTypeLabel(type: ActivityType) {
   }
 }
 
-function formatEventDayTime(dateString: string) {
+function formatEventDayTime(dateString: string, time?: string) {
   const date = new Date(dateString);
-  const options: Intl.DateTimeFormatOptions = { weekday: "short", hour: "numeric", minute: "numeric" };
-  return date.toLocaleString(undefined, options);
-}
+  if (isNaN(date.getTime())) return time || "TBD";
 
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  };
+  const dayStr = date.toLocaleDateString(undefined, options);
+  const formattedTime = time || date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  return `${dayStr} · ${formattedTime}`;
+}
 // ---------------- PAGE ----------------
 
 export default function ActivityPage() {
@@ -305,7 +315,7 @@ export default function ActivityPage() {
                       <p className="mt-1 text-sm text-slate-900">{e.community.name}</p>
                       {/* Day · Time · Location */}
                       <p className="mt-1 text-xs text-slate-500">
-                        {e.time} · {e.location}
+                        {formatEventDayTime(e.date, e.time)} · {e.locationName}
                       </p>
                     </div>
                   ))}

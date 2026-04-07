@@ -135,6 +135,15 @@ export const api = {
       request(`/api/user/communities?userId=${userId}`, {
         method: "GET",
       }),
+    track: (
+      userId: number,
+      communityId: number,
+      type: "view" | "click" | "rsvp" | "join"
+    ): Promise<{ ok: boolean }> =>
+      request("/api/user/track", {
+        method: "POST",
+        body: JSON.stringify({ userId, communityId, type }),
+      }),
   },
   clubs: {
     requestAdminAccess: (clubId: number, justification: string) =>

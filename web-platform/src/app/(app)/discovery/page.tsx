@@ -90,6 +90,12 @@ export default function DiscoveryPage() {
           },
           logoSrc: c.avatarUrl || "/avatars/placeholder.png",
           bannerSrc: c.bannerUrl || c.banner || "/gator-hero.png",
+          score: c.score,
+          contentScore: c.contentScore,
+          collabScore: c.collabScore,
+          reason: c.reason,
+          reasonType: c.reasonType,
+          matchedTags: c.matchedTags,
         }));
         setClubs(mapped);
       } catch (err: any) {

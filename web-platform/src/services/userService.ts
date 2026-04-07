@@ -166,14 +166,43 @@ export async function recommendCommunities(userId: number) {
     }
   }
 
-  // If ML recommendations exist, return them with scores preserved
+  // If ML recommendations exist, return them with scores + "why" reasons
   if (mlRecommendations.length > 0) {
-    return mlRecommendations.map(rec => ({
-      ...rec.community,
-      score: rec.score,
-      contentScore: rec.contentScore,
-      collabScore: rec.collabScore,
-    }));
+    // Fetch user interests once so we can compute matching tags per recommendation
+    const userWithInterests = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { interests: { select: { name: true } } }
+    });
+    const interestNames = new Set(userWithInterests?.interests.map(t => t.name) ?? []);
+
+    return mlRecommendations.map(rec => {
+      const tagNames = rec.community.tags.map(t => t.name);
+      const matchedTags = tagNames.filter(t => interestNames.has(t));
+
+      // Build a human-readable reason based on which signals fired
+      let reason: string;
+      let reasonType: "content" | "collab" | "popularity";
+      if (rec.contentScore > 0 && matchedTags.length > 0) {
+        reasonType = "content";
+        reason = `Recommended because you like ${matchedTags.slice(0, 2).join(" and ")}`;
+      } else if (rec.collabScore > 0) {
+        reasonType = "collab";
+        reason = "Popular with students like you";
+      } else {
+        reasonType = "popularity";
+        reason = "Trending on campus";
+      }
+
+      return {
+        ...rec.community,
+        score: rec.score,
+        contentScore: rec.contentScore,
+        collabScore: rec.collabScore,
+        reason,
+        reasonType,
+        matchedTags,
+      };
+    });
   }
 
   // Fallback to tag-based recommendations if ML engine is unavailable

@@ -16,17 +16,29 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
 
+  // Fire-and-forget interaction logger — feeds the ML collaborative filter
+  function track(type: "view" | "click" | "join") {
+    if (!user) return;
+    api.user.track(Number(user.id), Number(club.id), type).catch(() => {});
+  }
+
   async function handleJoin() {
     if (!user || joined || joining) return;
     setJoining(true);
     try {
       await api.user.joinCommunity(Number(user.id), Number(club.id));
+      track("join");
       setJoined(true);
     } catch (err) {
       console.error("Failed to join:", err);
     } finally {
       setJoining(false);
     }
+  }
+
+  function handleView() {
+    track("click");
+    router.push(`/club/${club.id}`);
   }
 
   return (
@@ -73,16 +85,31 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
           </div>
         )}
 
-        {/* Score indicator */}
+        {/* Score + reason */}
         {club.score != null && (
-          <div className="mt-2 text-[10px] text-slate-400">
-            {Math.round(club.score * 100)}% match
+          <div className="mt-2 flex flex-col gap-0.5">
+            <div className="text-[10px] text-slate-400">
+              {Math.round(club.score * 100)}% match
+            </div>
+            {club.reason && (
+              <div
+                className={`text-[10px] font-medium ${
+                  club.reasonType === "content"
+                    ? "text-emerald-600"
+                    : club.reasonType === "collab"
+                    ? "text-blue-600"
+                    : "text-amber-600"
+                }`}
+              >
+                {club.reason}
+              </div>
+            )}
           </div>
         )}
 
         {/* Actions */}
         <div className="mt-auto flex justify-between items-center pt-2">
-          <Button variant="outline" size="sm" onClick={() => router.push(`/club/${club.id}`)}>
+          <Button variant="outline" size="sm" onClick={handleView}>
             View
           </Button>
           <Button

@@ -8,4 +8,7 @@ export type DiscoveryClub = {
   score?: number;
   contentScore?: number;
   collabScore?: number;
+  reason?: string;
+  reasonType?: "content" | "collab" | "popularity";
+  matchedTags?: string[];
 };

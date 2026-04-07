@@ -186,6 +186,13 @@ export const api = {
     getAll: (): Promise<{ id: number; name: string }[]> =>
       request("/api/tags", { method: "GET" }),
   },
+  activity: {
+  getFeed: () =>
+    request("/api/activity/feed", { method: "GET" }),
+
+  getUpcoming: () =>
+    request("/api/activity/upcoming", { method: "GET" }),
+  },
   community: {
     create: (name: string): Promise<Community> =>
       request("/api/community/create", {

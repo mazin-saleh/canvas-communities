@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { api } from "@/lib/api";
 
 type ActivityType = "club" | "event" | "update" | "recommendation";
 
@@ -33,74 +33,50 @@ type ActivityItem = {
   clubId?: string;
 };
 
-const MOCK_ACTIVITY: ActivityItem[] = [
-  {
-    id: "1",
-    type: "club",
-    title: "Gator Grilling Club posted a new announcement",
-    description: "Join us this Thursday for our weekly cookout at the Reitz Union Patio.",
-    time: "10 min ago",
-    unread: true,
-    href: "/club/53",
-    clubName: "Gator Grilling Club",
-    clubId: "gator-grilling",
-  },
-  {
-    id: "2",
-    type: "event",
-    title: "UF ACM added a hack night event",
-    description: "Hack Night starts Wednesday at 7:00 PM in the CSE Atrium.",
-    time: "1 hour ago",
-    unread: true,
-    href: "/club/5",
-    clubName: "UF ACM",
-    clubId: "acm",
-  },
-  {
-    id: "3",
-    type: "recommendation",
-    title: "We found 4 new clubs for you",
-    description: "Your interests match clubs in computer science, community, and volunteering.",
-    time: "Today",
-    unread: false,
-    href: "/discovery",
-  },
-  {
-    id: "4",
-    type: "update",
-    title: "You joined Gator Surf Club",
-    description: "Your membership has been added successfully.",
-    time: "Yesterday",
-    unread: false,
-    href: "/club/39",
-    clubName: "Gator Surf Club",
-    clubId: "gator-surf",
-  },
-  {
-    id: "5",
-    type: "club",
-    title: "Pre-Dental Society shared DAT prep resources",
-    description: "Slides and study guides are now available for members.",
-    time: "2 days ago",
-    unread: false,
-    href: "/club/18",
-    clubName: "Pre-Dental Society",
-    clubId: "pre-dent",
-  },
-  {
-    id: "6",
-    type: "event",
-    title: "UF Tennis Club opened signups",
-    description: "Open court night is now live for Friday at 6:00 PM.",
-    time: "2 days ago",
-    unread: false,
-    href: "/club/34",
-    clubName: "UF Tennis Club",
-    clubId: "tennis",
-  },
-];
+type UpcomingEvent = {
+  id: number;
+  title: string;
+  time: string;
+  location: string;
+  community: {
+    id: number;
+    name: string;
+  };
+};
 
 const FILTERS: Array<"all" | ActivityType> = ["all", "club", "event", "update", "recommendation"];
+
+// ---------------- UTIL ----------------
+
+function formatTimeAgo(dateString: string | Date) {
+  const date = new Date(dateString);
+  const diff = Date.now() - date.getTime();
+
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+
+  return `${days} days ago`;
+}
+
+function mapToActivityItem(item: any): ActivityItem {
+  return {
+    id: item.id,
+    type: item.type === "announcement" ? "club" : item.type,
+    title: item.title,
+    description: item.description,
+    time: formatTimeAgo(item.timestamp),
+    unread: true,
+    href: item.community ? `/club/${item.community.id}` : "/discovery",
+    clubName: item.community?.name,
+    clubId: item.community?.id.toString(),
+  };
+}
 
 function activityIcon(type: ActivityType) {
   switch (type) {
@@ -145,15 +121,46 @@ function formatTypeLabel(type: ActivityType) {
   }
 }
 
+function formatEventDayTime(dateString: string) {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = { weekday: "short", hour: "numeric", minute: "numeric" };
+  return date.toLocaleString(undefined, options);
+}
+
+// ---------------- PAGE ----------------
+
 export default function ActivityPage() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [feedData, upcomingData] = await Promise.all([
+          api.activity.getFeed(),
+          api.activity.getUpcoming(),
+        ]);
+
+        setActivity(feedData.map(mapToActivityItem));
+        setEvents(upcomingData);
+      } catch (err) {
+        console.error("Failed to load activity", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return MOCK_ACTIVITY;
-    return MOCK_ACTIVITY.filter((item) => item.type === filter);
-  }, [filter]);
+    if (filter === "all") return activity;
+    return activity.filter((item) => item.type === filter);
+  }, [filter, activity]);
 
-  const unreadCount = MOCK_ACTIVITY.filter((a) => a.unread).length;
+  const unreadCount = activity.filter((a) => a.unread).length;
 
   return (
     <div className="min-h-full bg-[url('/background.png')] bg-cover bg-center">
@@ -213,6 +220,9 @@ export default function ActivityPage() {
               </CardHeader>
 
               <CardContent className="p-0">
+                {loading ? (
+                  <p className="p-5 text-sm text-slate-500">Loading...</p>
+                ) : (
                   <div className="divide-y divide-slate-100">
                     {filtered.map((item) => {
                       const Icon = activityIcon(item.type);
@@ -275,6 +285,7 @@ export default function ActivityPage() {
                       );
                     })}
                   </div>
+                )}
               </CardContent>
             </Card>
 
@@ -286,32 +297,18 @@ export default function ActivityPage() {
                   </h2>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-slate-900">
-                      Gator Grilling Club
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Thu · 7:00 PM · Reitz Union Patio
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-slate-900">
-                      UF ACM Hack Night
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Wed · 7:00 PM · CSE Atrium
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-slate-900">
-                      Campus Volleyball Crew
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Fri · 6:00 PM · Southwest Courts
-                    </p>
-                  </div>
+                  {events.map((e) => (
+                    <div key={e.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                      {/* Event Title */}
+                      <p className="text-sm font-medium text-slate-900">{e.title}</p>
+                      {/* Club / Community Name */}
+                      <p className="mt-1 text-sm text-slate-900">{e.community.name}</p>
+                      {/* Day · Time · Location */}
+                      <p className="mt-1 text-xs text-slate-500">
+                        {e.time} · {e.location}
+                      </p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
 
@@ -323,16 +320,16 @@ export default function ActivityPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Button asChild className="w-full rounded-2xl bg-sky-500 text-white hover:bg-sky-600 border-0">
-                <Link href="/discovery">Browse clubs</Link>
-                </Button>
+                    <Link href="/discovery">Browse clubs</Link>
+                  </Button>
 
-                <Button asChild className="w-full rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 border-0">
-                <Link href="/settings">Update interests</Link>
-                </Button>
+                  <Button asChild className="w-full rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 border-0">
+                    <Link href="/settings">Update interests</Link>
+                  </Button>
 
-                <Button asChild className="w-full rounded-2xl bg-orange-500 text-white hover:bg-orange-600 border-0">
-                <Link href="/club/22">Request an existing community</Link>
-                </Button>
+                  <Button asChild className="w-full rounded-2xl bg-orange-500 text-white hover:bg-orange-600 border-0">
+                    <Link href="/club/22">Request an existing community</Link>
+                  </Button>
                 </CardContent>
               </Card>
             </div>

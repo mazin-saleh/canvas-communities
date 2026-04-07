@@ -22,6 +22,8 @@ async function main() {
   await prisma.membership.deleteMany({});
   await prisma.$executeRaw`DELETE FROM "_UserInterests";`;
   await prisma.$executeRaw`DELETE FROM "_CommunityTags";`;
+  await prisma.announcement.deleteMany({});
+  await prisma.event.deleteMany({});
   await prisma.tag.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.community.deleteMany({});
@@ -1130,6 +1132,64 @@ async function main() {
   });
   console.log(`Seeded ${interactionData.length} interactions`);
   console.log('Seed complete.');
+
+  await prisma.announcement.createMany({
+  data: [
+    {
+      communityId: communities["Gator Grilling Club"].id,
+      createdById: users["alice"].id,
+      title: "Join us this Thursday for our weekly cookout at the Reitz Union Patio.",
+      description: "",
+      status: "published",
+      createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 min ago
+    },
+    {
+      communityId: communities["Pre-Dental Society"].id,
+      createdById: users["carol"].id,
+      title: "Slides and study guides are now available for members.",
+      description: "",
+      status: "published",
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    },
+  ],
+  });
+  await prisma.event.createMany({
+  data: [
+    {
+      communityId: communities["UF ACM Chapter"].id,
+      createdById: users["alice"].id,
+      title: "Hack Night",
+      description: "Hack Night starts Wednesday at 7:00 PM in the CSE Atrium.",
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000), // future
+      time: "7:00 PM",
+      locationName: "CSE Atrium",
+      status: "published",
+      createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+    },
+    {
+      communityId: communities["UF Tennis Club"].id,
+      createdById: users["alice"].id,
+      title: "Open Court Night",
+      description: "Open court night is now live for Friday at 6:00 PM.",
+      date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      time: "6:00 PM",
+      locationName: "Southwest Courts",
+      status: "published",
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    },
+    {
+      communityId: communities["Gator Grilling Club"].id,
+      createdById: users["alice"].id,
+      title: "Weekly Cookout",
+      description: "Food, games, and grilling!",
+      date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      time: "7:00 PM",
+      locationName: "Reitz Union Patio",
+      status: "published",
+      createdAt: new Date(),
+    },
+  ],
+  });
 }
 
 main()

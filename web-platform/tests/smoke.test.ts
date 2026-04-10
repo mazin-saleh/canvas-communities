@@ -255,6 +255,47 @@ async function testJoinCommunity() {
   assert(dup.status === 200, "Duplicate join should return 200 (idempotent)");
 }
 
+async function testSerendipityPicks() {
+  // Our test user has Law + Outdoors interests and joined a recommended club.
+  // The explore endpoint should return 0 or more picks, and each pick should
+  // have the correct shape with endorsement metadata.
+  const res = await api(`/api/community/explore?userId=${testUserId}&topK=5`);
+  assert(res.status === 200, `Explore should return 200, got ${res.status}`);
+  assert(Array.isArray(res.data), "Explore response should be an array");
+
+  // When there are picks, each one should have the serendipity reason shape
+  for (const pick of res.data) {
+    assert(typeof pick.name === "string", "Pick should have name");
+    assert(typeof pick.score === "number", "Pick should have numeric score");
+    assert(pick.score > 0, "Pick score should be > 0 after normalization");
+    assert(Array.isArray(pick.tags), "Pick should have tags array");
+    assert(typeof pick.reason === "string", "Pick should have a reason string");
+    assert(
+      pick.reasonType === "collab",
+      `Pick reasonType should be 'collab', got ${pick.reasonType}`
+    );
+    assert(
+      Array.isArray(pick.endorsedBy),
+      "Pick should have endorsedBy array"
+    );
+    assert(
+      typeof pick.endorsementCount === "number",
+      "Pick should have endorsementCount"
+    );
+  }
+
+  // Invalid user should return an error (404 from ML or 500 on proxy failure)
+  const bad = await api(`/api/community/explore?userId=999999`);
+  assert(
+    bad.status === 404 || bad.status === 500,
+    `Invalid user should return error, got ${bad.status}`
+  );
+
+  // Missing userId should be rejected cleanly
+  const missing = await api(`/api/community/explore`);
+  assert(missing.status === 400, `Missing userId should return 400, got ${missing.status}`);
+}
+
 async function testUserSimilarity() {
   // Query similar users for our test user via the Next.js proxy
   const res = await api(`/api/user/similar?userId=${testUserId}&topK=5`);
@@ -346,6 +387,7 @@ const tests: Test[] = [
   { name: "Interaction tracking (view/click/rsvp/join)", fn: testInteractionTracking },
   { name: "Join community + duplicate join", fn: testJoinCommunity },
   { name: "User-to-user similarity explorer", fn: testUserSimilarity },
+  { name: "Serendipity picks ('You might also like')", fn: testSerendipityPicks },
   { name: "Invalid user edge cases", fn: testInvalidUser },
   { name: "ML GET pre-computed recs", fn: testMLGetRecommend },
 ];

@@ -1,9 +1,11 @@
 """
-test_popularity.py — Tests for member count scoring
+test_popularity.py — Tests for time-decayed member count scoring
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
-from recommender.popularity import compute_popularity_scores
+from recommender.popularity import compute_popularity_scores, HALF_LIFE_DAYS
 
 
 # ── Sample Data ──────────────────────────────────────────────────────────────
@@ -95,3 +97,63 @@ class TestComputePopularityScores:
 
         # 1/1 = 1.0
         assert scores[99] == pytest.approx(1.0)
+
+    def test_recent_join_beats_old_join(self):
+        """
+        Two clubs have the same raw member count, but the one with recent
+        joins should score higher thanks to time decay.
+        """
+        now = datetime(2026, 4, 1, tzinfo=timezone.utc)
+        recent = now - timedelta(days=5)      # weight ~0.96
+        old = now - timedelta(days=365)       # weight ~0.061
+
+        memberships = [
+            # Next.js Devs (id=1): 2 recent joins
+            {"user_id": 1, "community_id": 1, "joined_at": recent},
+            {"user_id": 2, "community_id": 1, "joined_at": recent},
+            # Python Enthusiasts (id=2): 2 stale joins
+            {"user_id": 3, "community_id": 2, "joined_at": old},
+            {"user_id": 4, "community_id": 2, "joined_at": old},
+            # Gamers Hub (id=3): no members
+        ]
+
+        scores = compute_popularity_scores(memberships, COMMUNITIES, now=now)
+
+        # Next.js Devs should rank at the top (freshest joins)
+        assert scores[1] == pytest.approx(1.0)
+        # Python should be meaningfully lower despite having the same count
+        assert scores[2] < 0.15
+        # Gamers Hub has no members, still zero
+        assert scores[3] == pytest.approx(0.0)
+
+    def test_half_life_weighting(self):
+        """A join exactly one half-life ago should weigh 0.5 of a fresh join."""
+        now = datetime(2026, 4, 1, tzinfo=timezone.utc)
+        fresh = now
+        half_life_ago = now - timedelta(days=HALF_LIFE_DAYS)
+
+        memberships = [
+            {"user_id": 1, "community_id": 1, "joined_at": fresh},         # weight 1.0
+            {"user_id": 2, "community_id": 2, "joined_at": half_life_ago}, # weight 0.5
+        ]
+
+        scores = compute_popularity_scores(memberships, COMMUNITIES, now=now)
+
+        # Club 1 weighted 1.0, club 2 weighted 0.5 → after normalization 1.0 and 0.5
+        assert scores[1] == pytest.approx(1.0)
+        assert scores[2] == pytest.approx(0.5, abs=0.01)
+
+    def test_missing_joined_at_treated_as_now(self):
+        """Backward compat: memberships without joined_at should still work."""
+        memberships = [
+            {"user_id": 1, "community_id": 1},  # no joined_at
+            {"user_id": 2, "community_id": 1},
+            {"user_id": 3, "community_id": 2},
+        ]
+
+        scores = compute_popularity_scores(memberships, COMMUNITIES)
+
+        # Same as the old behavior: raw count divided by max count
+        assert scores[1] == pytest.approx(1.0)  # 2/2
+        assert scores[2] == pytest.approx(0.5)  # 1/2
+        assert scores[3] == pytest.approx(0.0)

@@ -215,6 +215,10 @@ export const api = {
       }),
     getRecommended: (userId: number): Promise<Community[]> =>
       request(`/api/community/recommend?userId=${userId}`, { method: "GET" }),
+    getExplore: (userId: number, topK = 10): Promise<Community[]> =>
+      request(`/api/community/explore?userId=${userId}&topK=${topK}`, {
+        method: "GET",
+      }),
     getById: (id: number): Promise<Community> =>
       request(`/api/community/get?id=${id}`, { method: "GET" }),
     update: (communityId: number, data: { name?: string; description?: string; avatarUrl?: string | null }) =>

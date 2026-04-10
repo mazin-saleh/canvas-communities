@@ -1,43 +1,71 @@
 """
-popularity.py — Popularity-Based Scoring
-==========================================
-Scores communities by member count, normalized to 0.0–1.0.
+popularity.py — Time-Decayed Popularity Scoring
+=================================================
+Scores communities by member count weighted by recency. Recent joins count
+more than old ones, so a club that got popular six months ago doesn't
+dominate forever. This fights the "rich-get-richer" popularity bias.
+
 Used as a cold-start fallback when a user has no interests or join history.
 """
 
-from collections import Counter
+from collections import defaultdict
+from datetime import datetime, timezone
+
+
+# Half-life in days: a join this old counts for half a fresh one.
+# 90 days = a join from 3 months ago weighs 0.5, 6 months ago weighs 0.25.
+# Tune this constant to make popularity more or less "sticky".
+HALF_LIFE_DAYS = 90
 
 
 def compute_popularity_scores(
     memberships: list[dict],
-    communities: list[dict]
+    communities: list[dict],
+    now: datetime | None = None,
 ) -> dict[int, float]:
     """
-    Returns a normalized popularity score for each community.
+    Returns a normalized popularity score for each community, weighted by recency.
 
     memberships: list of dicts from db.fetch_memberships()
-                 e.g. [{"user_id": 1, "community_id": 2}, ...]
+                 e.g. [{"user_id": 1, "community_id": 2, "joined_at": datetime(...)}, ...]
+                 joined_at is optional — missing timestamps are treated as "right now".
     communities: list of dicts from db.fetch_communities_with_tags()
-                 used to ensure every community gets a score, even with 0 members
+                 used to ensure every community gets a score, even with 0 members.
+    now:         optional override of "current time" for deterministic testing.
 
-    Example with seed data:
-        Python Enthusiasts — 2 members → 2/2 = 1.0  (most popular)
-        Next.js Devs       — 1 member  → 1/2 = 0.5
-        Gamers Hub         — 1 member  → 1/2 = 0.5
+    Example with seed data (assume HALF_LIFE_DAYS=90):
+        Two clubs have the same raw count (5 members each), but:
+          - Club A: all 5 joined today        → weighted_sum = 5.0
+          - Club B: all 5 joined 180 days ago → weighted_sum ≈ 1.25
+        Club A ranks higher because its popularity is fresh.
     """
-    # Count how many members each community has
-    member_counts = Counter(m["community_id"] for m in memberships)
+    reference_time = now or datetime.now(timezone.utc)
 
-    # Find the highest count so we can normalize everything against it
-    max_count = max(member_counts.values(), default=0)
+    # Sum time-decayed weights per community
+    weighted_counts: dict[int, float] = defaultdict(float)
+    for m in memberships:
+        cid = m["community_id"]
+        joined_at = m.get("joined_at")
+
+        if joined_at is None:
+            # No timestamp → treat as "now" (weight = 1.0)
+            weight = 1.0
+        else:
+            # Ensure the datetime is timezone-aware so subtraction works
+            if joined_at.tzinfo is None:
+                joined_at = joined_at.replace(tzinfo=timezone.utc)
+            age_days = max(0.0, (reference_time - joined_at).total_seconds() / 86400.0)
+            weight = 0.5 ** (age_days / HALF_LIFE_DAYS)
+
+        weighted_counts[cid] += weight
+
+    # Find the highest weighted sum so we can normalize to 0.0–1.0
+    max_weight = max(weighted_counts.values(), default=0.0)
 
     scores = {}
     for community in communities:
         cid = community["community_id"]
-        count = member_counts.get(cid, 0)  # 0 if community has no members yet
-
-        # Normalize: divide by max so all scores land in 0.0–1.0
-        # If max_count is 0 (no memberships at all), everyone scores 0.0
-        scores[cid] = count / max_count if max_count > 0 else 0.0
+        raw = weighted_counts.get(cid, 0.0)
+        scores[cid] = raw / max_weight if max_weight > 0 else 0.0
 
     return scores

@@ -49,6 +49,7 @@ export default function DiscoveryPage() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   const [clubs, setClubs] = useState<any[]>([]);
+  const [exploreClubs, setExploreClubs] = useState<any[]>([]);
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,10 +71,12 @@ export default function DiscoveryPage() {
         return;
       }
       try {
-        // Fetch recs and user interests in parallel
-        const [data, interests] = await Promise.all([
+        // Fetch recs, interests, and serendipity picks in parallel
+        // Serendipity is optional — if it fails, the page still works
+        const [data, interests, explore] = await Promise.all([
           api.community.getRecommended(currentUserId),
           api.user.getInterests(currentUserId),
+          api.community.getExplore(currentUserId).catch(() => []),
         ]);
         if (!mounted) return;
         setUserInterests(interests.map((t: any) => t.name));
@@ -98,6 +101,29 @@ export default function DiscoveryPage() {
           matchedTags: c.matchedTags,
         }));
         setClubs(mapped);
+
+        // Same shape transform for serendipity picks so DiscoveryClubCard can render them
+        const mappedExplore = (Array.isArray(explore) ? explore : []).map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          description: c.description || "Club description coming soon.",
+          tags: (c.tags || []).map((t: any) => (t && t.name ? t.name : String(t || ""))),
+          nextMeeting: {
+            title: "General Meeting",
+            datetime: "TBD",
+            location: "Campus",
+          },
+          logoSrc: c.avatarUrl || "/avatars/placeholder.png",
+          bannerSrc: c.bannerUrl || c.banner || "/gator-hero.png",
+          score: c.score,
+          contentScore: c.contentScore,
+          collabScore: c.collabScore,
+          reason: c.reason,
+          reasonType: c.reasonType,
+          endorsedBy: c.endorsedBy,
+          endorsementCount: c.endorsementCount,
+        }));
+        setExploreClubs(mappedExplore);
       } catch (err: any) {
         console.error("Failed to load recommendations", err);
         setError(err.message || "Failed to load recommendations");
@@ -131,6 +157,10 @@ export default function DiscoveryPage() {
   };
 
   const forYouClubs = useMemo(() => applyFilters(clubs), [clubs, query, activeFilters]);
+  const filteredExploreClubs = useMemo(
+    () => applyFilters(exploreClubs),
+    [exploreClubs, query, activeFilters]
+  );
 
   // Build "Since you liked X" rows from the user's actual interests
   // Pick up to 2 interests that have matching clubs
@@ -284,6 +314,19 @@ export default function DiscoveryPage() {
                     rowId="for-you"
                     rowHeight={rowHeight}
                   />
+
+                  {filteredExploreClubs.length > 0 && (
+                    <DiscoveryCarouselRow
+                      title={
+                        <>
+                          You might <span className="text-orange-500">also like</span>
+                        </>
+                      }
+                      clubs={filteredExploreClubs}
+                      rowId="you-might-also-like"
+                      rowHeight={rowHeight}
+                    />
+                  )}
 
                   {interestRows.map((row) => (
                     <DiscoveryCarouselRow

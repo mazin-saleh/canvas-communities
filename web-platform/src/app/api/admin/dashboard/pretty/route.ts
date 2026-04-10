@@ -460,6 +460,118 @@ async function loadSimilarUsers(userId) {
   }
 }
 
+async function loadSerendipityPicks(userId) {
+  const container = document.getElementById('sim-picks');
+  if (!container) return;
+
+  if (!userId) {
+    container.textContent = '';
+    return;
+  }
+
+  container.textContent = '';
+  const loading = document.createElement('div');
+  loading.className = 'sim-loading';
+  loading.textContent = 'Computing serendipity picks...';
+  container.appendChild(loading);
+
+  try {
+    const res = await fetch('/api/community/explore?userId=' + encodeURIComponent(userId) + '&topK=5');
+    if (!res.ok) {
+      container.textContent = '';
+      const err = document.createElement('div');
+      err.className = 'sim-empty';
+      err.textContent = 'Failed to load serendipity picks.';
+      container.appendChild(err);
+      return;
+    }
+
+    const picks = await res.json();
+    container.textContent = '';
+
+    if (!Array.isArray(picks) || picks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'sim-empty';
+      empty.textContent = 'No serendipity picks — this user has no similar peers who joined clubs they haven\\'t.';
+      container.appendChild(empty);
+      return;
+    }
+
+    picks.forEach(function(p) {
+      const pct = Math.round((p.score || 0) * 100);
+
+      const row = document.createElement('div');
+      row.className = 'sim-row';
+
+      const bar = document.createElement('div');
+      bar.className = 'sim-bar';
+      bar.style.width = Math.max(pct, 8) + '%';
+      row.appendChild(bar);
+
+      const content = document.createElement('div');
+      content.className = 'sim-content';
+
+      // Club name
+      const who = document.createElement('div');
+      who.className = 'sim-who';
+      const clubStrong = document.createElement('strong');
+      clubStrong.textContent = p.name;
+      who.appendChild(clubStrong);
+      content.appendChild(who);
+
+      // Breakdown: reason + endorser chips
+      const breakdown = document.createElement('div');
+      breakdown.className = 'sim-breakdown';
+
+      if (p.reason) {
+        const reasonDiv = document.createElement('div');
+        reasonDiv.style.fontStyle = 'italic';
+        reasonDiv.style.color = '#666';
+        reasonDiv.textContent = p.reason;
+        breakdown.appendChild(reasonDiv);
+      }
+
+      const endorsers = p.endorsedBy || [];
+      if (endorsers.length > 0) {
+        const shared = document.createElement('div');
+        shared.className = 'sim-shared';
+        endorsers.slice(0, 4).forEach(function(e) {
+          const chip = document.createElement('span');
+          chip.className = 'chip tag-match';
+          chip.textContent = e.username + ' (' + Math.round(e.similarity * 100) + '%)';
+          shared.appendChild(chip);
+        });
+        breakdown.appendChild(shared);
+      }
+
+      content.appendChild(breakdown);
+
+      // Score
+      const score = document.createElement('div');
+      score.className = 'sim-score';
+      score.title = 'Serendipity score: sum of peer similarity values, normalized. Higher = more similar users joined this club.';
+      const pctDiv = document.createElement('div');
+      pctDiv.className = 'pct';
+      pctDiv.textContent = pct + '%';
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'label';
+      labelDiv.textContent = 'strength';
+      score.appendChild(pctDiv);
+      score.appendChild(labelDiv);
+      content.appendChild(score);
+
+      row.appendChild(content);
+      container.appendChild(row);
+    });
+  } catch (e) {
+    container.textContent = '';
+    const err = document.createElement('div');
+    err.className = 'sim-empty';
+    err.textContent = 'Error: ' + e.message;
+    container.appendChild(err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   filterCards('search-signup', 'signup-cards');
   filterCards('search-seed', 'seed-cards');
@@ -467,7 +579,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const simSelect = document.getElementById('sim-user');
   if (simSelect) {
-    simSelect.addEventListener('change', (e) => loadSimilarUsers(e.target.value));
+    simSelect.addEventListener('change', (e) => {
+      loadSimilarUsers(e.target.value);
+      loadSerendipityPicks(e.target.value);
+    });
   }
 });
 </script>
@@ -563,6 +678,14 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="sim-results" class="sim-results">
   <div class="sim-empty">Pick a user to see who the ML model considers most similar.</div>
 </div>
+
+<h3 style="font-size: 14px; color: #666; margin: 24px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+  Serendipity picks for this user
+</h3>
+<p class="subtitle" style="margin: 0 0 10px;">
+  Clubs the similar users above joined that this user hasn't — powers the "You might also like" row on /discovery.
+</p>
+<div id="sim-picks" class="sim-results"></div>
 
 <h2>Users &amp; Their Recommendations</h2>
 

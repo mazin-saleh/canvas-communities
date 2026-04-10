@@ -70,13 +70,19 @@ export async function GET(req: NextRequest) {
         const community = byId.get(pick.community_id);
         if (!community) return null;
 
-        // Build the "why" reason from the strongest endorser
-        const topEndorser = pick.endorsed_by[0];
-        const others = pick.endorsement_count - 1;
+        // Anonymized short label shown next to the match %
+        const peerCount = pick.endorsement_count;
         const reason =
-          others > 0
-            ? `${topEndorser.username} (${Math.round(topEndorser.similarity * 100)}% similar) and ${others} other${others === 1 ? "" : "s"} joined this`
-            : `${topEndorser.username} (${Math.round(topEndorser.similarity * 100)}% similar) joined this`;
+          peerCount > 1
+            ? `${peerCount} similar students joined this`
+            : `A student with similar interests joined this`;
+
+        // Richer, still-anonymous copy for the info tooltip
+        const topSimPct = Math.round(pick.endorsed_by[0].similarity * 100);
+        const reasonDetail =
+          peerCount > 1
+            ? `${peerCount} students similar to you joined this club (top match ${topSimPct}%). We found this by comparing the interests and clubs of students like you.`
+            : `A student with a ${topSimPct}% profile match joined this club. We found them by comparing the interests and clubs of students like you.`;
 
         return {
           ...community,
@@ -84,8 +90,8 @@ export async function GET(req: NextRequest) {
           contentScore: 0,
           collabScore: pick.score,
           reason,
+          reasonDetail,
           reasonType: "collab" as const,
-          endorsedBy: pick.endorsed_by,
           endorsementCount: pick.endorsement_count,
         };
       })

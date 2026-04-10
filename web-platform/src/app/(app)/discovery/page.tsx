@@ -97,6 +97,7 @@ export default function DiscoveryPage() {
           contentScore: c.contentScore,
           collabScore: c.collabScore,
           reason: c.reason,
+          reasonDetail: c.reasonDetail,
           reasonType: c.reasonType,
           matchedTags: c.matchedTags,
         }));
@@ -119,6 +120,7 @@ export default function DiscoveryPage() {
           contentScore: c.contentScore,
           collabScore: c.collabScore,
           reason: c.reason,
+          reasonDetail: c.reasonDetail,
           reasonType: c.reasonType,
           endorsedBy: c.endorsedBy,
           endorsementCount: c.endorsementCount,

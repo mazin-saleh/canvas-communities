@@ -169,7 +169,8 @@ async function testRecommendations() {
     assert(typeof rec.score === "number", "Rec should have numeric score");
     assert(rec.score > 0, "Rec score should be > 0 (zero-score filtered)");
     assert(Array.isArray(rec.tags), "Rec should have tags array");
-    assert(typeof rec.reason === "string", "Rec should have a reason string");
+    assert(typeof rec.reason === "string", "Rec should have a reason label");
+    assert(typeof rec.reasonDetail === "string", "Rec should have a reasonDetail for the info popover");
     assert(
       ["content", "collab", "popularity"].includes(rec.reasonType),
       `Rec reasonType should be content/collab/popularity, got ${rec.reasonType}`
@@ -186,8 +187,8 @@ async function testRecommendations() {
       `Law club should be content-matched, got reasonType=${lawRec.reasonType}`
     );
     assert(
-      lawRec.reason.includes("Law"),
-      `Law club reason should mention Law, got: ${lawRec.reason}`
+      lawRec.reason.includes("Law") || lawRec.reasonDetail.includes("Law"),
+      `Law club reason should mention Law, got label="${lawRec.reason}" detail="${lawRec.reasonDetail}"`
     );
   }
 }
@@ -263,20 +264,22 @@ async function testSerendipityPicks() {
   assert(res.status === 200, `Explore should return 200, got ${res.status}`);
   assert(Array.isArray(res.data), "Explore response should be an array");
 
-  // When there are picks, each one should have the serendipity reason shape
+  // When there are picks, each one should have the anonymized serendipity shape
   for (const pick of res.data) {
     assert(typeof pick.name === "string", "Pick should have name");
     assert(typeof pick.score === "number", "Pick should have numeric score");
     assert(pick.score > 0, "Pick score should be > 0 after normalization");
     assert(Array.isArray(pick.tags), "Pick should have tags array");
-    assert(typeof pick.reason === "string", "Pick should have a reason string");
+    assert(typeof pick.reason === "string", "Pick should have a reason label");
+    assert(typeof pick.reasonDetail === "string", "Pick should have a reasonDetail for the info popover");
     assert(
       pick.reasonType === "collab",
       `Pick reasonType should be 'collab', got ${pick.reasonType}`
     );
+    // Anonymized: no usernames should leak into the reason strings
     assert(
-      Array.isArray(pick.endorsedBy),
-      "Pick should have endorsedBy array"
+      !pick.reason.match(/\b(alice|bob|carol|dave|eve|frank|grace|henry|iris)\b/i),
+      `Reason label should not contain seed usernames, got: ${pick.reason}`
     );
     assert(
       typeof pick.endorsementCount === "number",

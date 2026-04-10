@@ -23,25 +23,32 @@ import {
 export default function Sidebar() {
   const pathname = usePathname();
   const { clubs, isSuperAdmin, isClubOwnerOrAdmin } = useRole();
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    try {
-      const saved = window.localStorage.getItem("sidebar-collapsed");
-      return saved ? JSON.parse(saved) : false;
-    } catch {
-      return false;
-    }
-  });
+  // Always start with the same value on server + client to avoid a hydration
+  // mismatch, then hydrate from localStorage in an effect once the client mounts.
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [hydrated, setHydrated] = useState(false);
   const quickAccessClubs = clubs.slice(0, 6);
 
+  // Read persisted state once on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
+    try {
+      const saved = window.localStorage.getItem("sidebar-collapsed");
+      if (saved) setCollapsed(JSON.parse(saved));
+    } catch {
+      // ignore malformed localStorage
     }
-  }, [collapsed]);
+    setHydrated(true);
+  }, []);
+
+  // Persist after hydration so we don't overwrite the saved value with the initial default
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
+    } catch {
+      // ignore storage errors (quota, disabled storage, etc.)
+    }
+  }, [collapsed, hydrated]);
 
   const mainNav = [
     { label: "Discover", href: "/discovery", icon: Compass },

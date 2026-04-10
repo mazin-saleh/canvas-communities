@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { Info } from "lucide-react";
 import { DiscoveryClub } from "@/mocks/discovery";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -85,24 +87,63 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
           </div>
         )}
 
-        {/* Score + reason */}
+        {/* Score with optional "why" info popover */}
         {club.score != null && (
-          <div className="mt-2 flex flex-col gap-0.5">
-            <div className="text-[10px] text-slate-400">
+          <div className="mt-2 flex items-center gap-1.5">
+            <span
+              className={`text-[11px] font-semibold ${
+                club.reasonType === "content"
+                  ? "text-emerald-600"
+                  : club.reasonType === "collab"
+                  ? "text-blue-600"
+                  : club.reasonType === "popularity"
+                  ? "text-amber-600"
+                  : "text-slate-500"
+              }`}
+            >
               {Math.round(club.score * 100)}% match
-            </div>
-            {club.reason && (
-              <div
-                className={`text-[10px] font-medium ${
-                  club.reasonType === "content"
-                    ? "text-emerald-600"
-                    : club.reasonType === "collab"
-                    ? "text-blue-600"
-                    : "text-amber-600"
-                }`}
-              >
-                {club.reason}
-              </div>
+            </span>
+            {(club.reason || club.reasonDetail) && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Why is this recommended?"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  side="top"
+                  className="w-64 p-3 text-xs"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${
+                        club.reasonType === "content"
+                          ? "bg-emerald-500"
+                          : club.reasonType === "collab"
+                          ? "bg-blue-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="font-semibold text-slate-900">
+                      {club.reasonType === "content"
+                        ? "Interest match"
+                        : club.reasonType === "collab"
+                        ? "Peer discovery"
+                        : "Trending pick"}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 leading-snug">
+                    {club.reasonDetail || club.reason}
+                  </p>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
         )}

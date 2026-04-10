@@ -233,7 +233,6 @@ export default function DiscoveryPage() {
                       }
                       clubs={filteredExploreClubs}
                       rowId="you-might-also-like"
-                      rowHeight={rowHeight}
                     />
                   )}
 

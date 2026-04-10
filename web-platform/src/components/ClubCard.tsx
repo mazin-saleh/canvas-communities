@@ -16,9 +16,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useRole } from "@/context/RoleContext";
 
 export default function ClubCard({ club }: { club: Club }) {
   const { user } = useAuth();
+  const { refresh } = useRole();
   const [joined, setJoined] = useState(Boolean(club.joined));
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +70,7 @@ export default function ClubCard({ club }: { club: Club }) {
                 try {
                   await api.user.joinCommunity(Number(user.id), Number(club.id));
                   setJoined(true);
+                  refresh();
                 } catch (err) {
                   console.error("Failed to join community:", err);
                 } finally {

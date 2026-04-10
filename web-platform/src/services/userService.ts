@@ -111,6 +111,26 @@ export async function joinCommunity(userId: number, communityId: number) {
   return membership;
 }
 
+export async function leaveCommunity(userId: number, communityId: number) {
+  const existing = await prisma.membership.findUnique({
+    where: { userId_communityId: { userId, communityId } }
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  await prisma.membership.delete({
+    where: { userId_communityId: { userId, communityId } }
+  });
+
+  // Trigger ML recomputation (fire-and-forget)
+  fetch(`${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`, { method: 'POST' })
+    .catch(err => console.error('ML recomputation failed:', err));
+
+  return { success: true };
+}
+
 export async function getUserCommunities(userId: number) {
   return prisma.community.findMany({
     where: {

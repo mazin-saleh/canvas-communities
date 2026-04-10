@@ -17,15 +17,24 @@ async function main() {
   console.log("Resetting tables...");
 
   // Delete child tables first (to avoid foreign key constraints)
+  // Order: deepest children → parents
   await prisma.recommendation.deleteMany({});
   await prisma.interaction.deleteMany({});
+  await prisma.eventRsvp.deleteMany({});
+  await prisma.event.deleteMany({});
+  await prisma.announcement.deleteMany({});
+  await prisma.galleryImage.deleteMany({});
+  await prisma.clubMemberRole.deleteMany({});  // Must delete before Membership and ClubRole
+  await prisma.clubRolePermission.deleteMany({});  // Must delete before ClubRole
+  await prisma.clubRole.deleteMany({});  // Must delete before Community
   await prisma.membership.deleteMany({});
+  await prisma.communityOwner.deleteMany({});  // Must delete before Community and User
   await prisma.$executeRaw`DELETE FROM "_UserInterests";`;
   await prisma.$executeRaw`DELETE FROM "_CommunityTags";`;
-  await prisma.announcement.deleteMany({});
-  await prisma.event.deleteMany({});
   await prisma.tag.deleteMany({});
   await prisma.user.deleteMany({});
+  await prisma.clubRolePermission.deleteMany({});
+  await prisma.clubRole.deleteMany({});
   await prisma.community.deleteMany({});
 
   // Reset sequences so IDs start from 1
@@ -35,6 +44,14 @@ async function main() {
   await prisma.$executeRaw`ALTER SEQUENCE "Membership_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Interaction_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Recommendation_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Event_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "EventRsvp_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Announcement_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "GalleryImage_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "ClubRole_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "ClubRolePermission_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "ClubMemberRole_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "CommunityOwner_id_seq" RESTART WITH 1;`;
 
   console.log("Tables cleared, seeding new data...");
 

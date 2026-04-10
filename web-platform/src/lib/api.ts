@@ -131,6 +131,11 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify({ userId, communityId }),
       }),
+    leaveCommunity: (userId: number, communityId: number): Promise<unknown> =>
+      request("/api/user/leave-community", {
+        method: "DELETE",
+        body: JSON.stringify({ userId, communityId }),
+      }),
     getCommunities: (userId: number): Promise<Community[]> =>
       request(`/api/user/communities?userId=${userId}`, {
         method: "GET",

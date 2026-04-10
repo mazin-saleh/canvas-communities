@@ -163,13 +163,69 @@ async function testRecommendations() {
     `Top 5 recs should include a law or outdoor club, got: ${topNames.join(", ")}`
   );
 
-  // Each rec should have tags and score
+  // Each rec should have tags, score, and a "why" reason
   for (const rec of recs.data) {
     assert(typeof rec.name === "string", "Rec should have name");
     assert(typeof rec.score === "number", "Rec should have numeric score");
     assert(rec.score > 0, "Rec score should be > 0 (zero-score filtered)");
     assert(Array.isArray(rec.tags), "Rec should have tags array");
+    assert(typeof rec.reason === "string", "Rec should have a reason label");
+    assert(typeof rec.reasonDetail === "string", "Rec should have a reasonDetail for the info popover");
+    assert(
+      ["content", "collab", "popularity"].includes(rec.reasonType),
+      `Rec reasonType should be content/collab/popularity, got ${rec.reasonType}`
+    );
   }
+
+  // At least one law-tagged rec should be content-matched (we added Law interest)
+  const lawRec = recs.data.find((r: any) =>
+    r.tags.some((t: any) => (t.name ?? t) === "Law")
+  );
+  if (lawRec) {
+    assert(
+      lawRec.reasonType === "content",
+      `Law club should be content-matched, got reasonType=${lawRec.reasonType}`
+    );
+    assert(
+      lawRec.reason.includes("Law") || lawRec.reasonDetail.includes("Law"),
+      `Law club reason should mention Law, got label="${lawRec.reason}" detail="${lawRec.reasonDetail}"`
+    );
+  }
+}
+
+async function testInteractionTracking() {
+  // Pick a recommended community
+  const recs = await api(`/api/community/recommend?userId=${testUserId}`);
+  const communityId = recs.data[0].id;
+
+  // Track a click
+  const click = await api("/api/user/track", {
+    method: "POST",
+    body: JSON.stringify({ userId: testUserId, communityId, type: "click" }),
+  });
+  assert(click.status === 200, `Track click should return 200, got ${click.status}`);
+  assert(click.data.ok === true, "Track response should have ok=true");
+
+  // Track a view
+  const view = await api("/api/user/track", {
+    method: "POST",
+    body: JSON.stringify({ userId: testUserId, communityId, type: "view" }),
+  });
+  assert(view.status === 200, "Track view should return 200");
+
+  // Invalid type should be rejected
+  const bad = await api("/api/user/track", {
+    method: "POST",
+    body: JSON.stringify({ userId: testUserId, communityId, type: "bogus" }),
+  });
+  assert(bad.status === 400, `Invalid type should return 400, got ${bad.status}`);
+
+  // Missing fields should be rejected
+  const missing = await api("/api/user/track", {
+    method: "POST",
+    body: JSON.stringify({ userId: testUserId }),
+  });
+  assert(missing.status === 400, "Missing fields should return 400");
 }
 
 async function testJoinCommunity() {
@@ -198,6 +254,96 @@ async function testJoinCommunity() {
     body: JSON.stringify({ userId: testUserId, communityId }),
   });
   assert(dup.status === 200, "Duplicate join should return 200 (idempotent)");
+}
+
+async function testSerendipityPicks() {
+  // Our test user has Law + Outdoors interests and joined a recommended club.
+  // The explore endpoint should return 0 or more picks, and each pick should
+  // have the correct shape with endorsement metadata.
+  const res = await api(`/api/community/explore?userId=${testUserId}&topK=5`);
+  assert(res.status === 200, `Explore should return 200, got ${res.status}`);
+  assert(Array.isArray(res.data), "Explore response should be an array");
+
+  // When there are picks, each one should have the anonymized serendipity shape
+  for (const pick of res.data) {
+    assert(typeof pick.name === "string", "Pick should have name");
+    assert(typeof pick.score === "number", "Pick should have numeric score");
+    assert(pick.score > 0, "Pick score should be > 0 after normalization");
+    assert(Array.isArray(pick.tags), "Pick should have tags array");
+    assert(typeof pick.reason === "string", "Pick should have a reason label");
+    assert(typeof pick.reasonDetail === "string", "Pick should have a reasonDetail for the info popover");
+    assert(
+      pick.reasonType === "collab",
+      `Pick reasonType should be 'collab', got ${pick.reasonType}`
+    );
+    // Anonymized: no usernames should leak into the reason strings
+    assert(
+      !pick.reason.match(/\b(alice|bob|carol|dave|eve|frank|grace|henry|iris)\b/i),
+      `Reason label should not contain seed usernames, got: ${pick.reason}`
+    );
+    assert(
+      typeof pick.endorsementCount === "number",
+      "Pick should have endorsementCount"
+    );
+  }
+
+  // Invalid user should return an error (404 from ML or 500 on proxy failure)
+  const bad = await api(`/api/community/explore?userId=999999`);
+  assert(
+    bad.status === 404 || bad.status === 500,
+    `Invalid user should return error, got ${bad.status}`
+  );
+
+  // Missing userId should be rejected cleanly
+  const missing = await api(`/api/community/explore`);
+  assert(missing.status === 400, `Missing userId should return 400, got ${missing.status}`);
+}
+
+async function testUserSimilarity() {
+  // Query similar users for our test user via the Next.js proxy
+  const res = await api(`/api/user/similar?userId=${testUserId}&topK=5`);
+  assert(res.status === 200, `Similar users should return 200, got ${res.status}`);
+  assert(
+    typeof res.data.user_id === "number",
+    "Response should include user_id"
+  );
+  assert(
+    Array.isArray(res.data.similar_users),
+    "Response should have similar_users array"
+  );
+
+  // The test user has Law + Outdoors interests and joined a community.
+  // They should find at least one similar user (e.g. seed user alice who has Law).
+  const similar = res.data.similar_users;
+  if (similar.length > 0) {
+    const first = similar[0];
+    assert(typeof first.user_id === "number", "Similar user should have id");
+    assert(typeof first.username === "string", "Similar user should have username");
+    assert(typeof first.similarity === "number", "Should have similarity score");
+    assert(first.similarity > 0, "Top similar user score should be > 0");
+    assert(
+      typeof first.interest_similarity === "number",
+      "Should have interest_similarity"
+    );
+    assert(typeof first.join_similarity === "number", "Should have join_similarity");
+    assert(
+      Array.isArray(first.shared_interests),
+      "Should have shared_interests array"
+    );
+    assert(Array.isArray(first.shared_clubs), "Should have shared_clubs array");
+    // Smoke test users should be filtered out
+    assert(
+      !first.username.startsWith("smoke_"),
+      `Smoke users should be excluded, got: ${first.username}`
+    );
+  }
+
+  // Invalid user should return 404 from ML engine
+  const bad = await api(`/api/user/similar?userId=999999`);
+  assert(
+    bad.status === 404 || bad.status === 500,
+    `Invalid user should return error, got ${bad.status}`
+  );
 }
 
 async function testInvalidUser() {
@@ -241,7 +387,10 @@ const tests: Test[] = [
   { name: "Add interests", fn: testAddInterests },
   { name: "Remove interest", fn: testRemoveInterest },
   { name: "ML recommendations match interests", fn: testRecommendations },
+  { name: "Interaction tracking (view/click/rsvp/join)", fn: testInteractionTracking },
   { name: "Join community + duplicate join", fn: testJoinCommunity },
+  { name: "User-to-user similarity explorer", fn: testUserSimilarity },
+  { name: "Serendipity picks ('You might also like')", fn: testSerendipityPicks },
   { name: "Invalid user edge cases", fn: testInvalidUser },
   { name: "ML GET pre-computed recs", fn: testMLGetRecommend },
 ];

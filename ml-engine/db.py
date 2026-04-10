@@ -110,18 +110,29 @@ def fetch_communities_with_tags() -> list[dict]:
 
 def fetch_memberships() -> list[dict]:
     """
-    Returns every membership record — which user joined which community.
-    Example: [{"user_id": 1, "community_id": 2}, ...]
-    Used by collaborative filtering to see who joined what.
+    Returns every membership record — which user joined which community and when.
+    Example: [{"user_id": 1, "community_id": 2, "joined_at": datetime(...)}, ...]
+
+    Used by collaborative filtering (who joined what) and the time-decayed
+    popularity scorer (recent joins weigh more than old ones).
     """
     with Session() as session:
         result = session.execute(text("""
-            SELECT "userId" AS user_id, "communityId" AS community_id
+            SELECT "userId" AS user_id,
+                   "communityId" AS community_id,
+                   "joinedAt" AS joined_at
             FROM "Membership"
         """))
         rows = result.fetchall()
 
-    return [{"user_id": r.user_id, "community_id": r.community_id} for r in rows]
+    return [
+        {
+            "user_id": r.user_id,
+            "community_id": r.community_id,
+            "joined_at": r.joined_at,
+        }
+        for r in rows
+    ]
 
 
 def fetch_interactions() -> list[dict]:

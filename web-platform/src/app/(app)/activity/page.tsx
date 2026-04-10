@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 type ActivityType = "club" | "event" | "update" | "recommendation";
 
@@ -140,16 +141,24 @@ function formatEventDayTime(dateString: string, time?: string) {
 // ---------------- PAGE ----------------
 
 export default function ActivityPage() {
+  const { user, hydrated } = useAuth();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to hydrate so we have a real user ID
+    if (!hydrated) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       try {
         const [feedData, upcomingData] = await Promise.all([
-          api.activity.getFeed(),
+          api.activity.getFeed(Number(user!.id)),
           api.activity.getUpcoming(),
         ]);
 
@@ -163,7 +172,7 @@ export default function ActivityPage() {
     }
 
     load();
-  }, []);
+  }, [hydrated, user]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return activity;

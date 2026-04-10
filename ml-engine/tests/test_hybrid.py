@@ -93,16 +93,20 @@ class TestAdaptWeightsForColdStart:
         assert adapted == weights
 
     def test_all_collab_zero(self):
-        """When collab is all zeros, shift weight to content + popularity."""
+        """
+        When collab is all zeros, shift weight heavily to content so the user's
+        stated interests drive results. Popularity gets only a small share —
+        we want niche matches to beat trending clubs for cold-start users.
+        """
         content = {1: 0.5, 2: 0.3}
         collab = {1: 0.0, 2: 0.0}  # no join history
         weights = {"content": 0.5, "collab": 0.3, "popularity": 0.2}
 
         adapted = _adapt_weights_for_cold_start(content, collab, weights)
 
-        assert adapted["content"] == 0.7
+        assert adapted["content"] == 0.85
         assert adapted["collab"] == 0.0
-        assert adapted["popularity"] == 0.3
+        assert adapted["popularity"] == 0.15
 
     def test_all_content_zero(self):
         """When content is all zeros, shift weight to collab + popularity."""

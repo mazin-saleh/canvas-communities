@@ -18,11 +18,18 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
 
+  // Fire-and-forget interaction logger — feeds the ML collaborative filter
+  function track(type: "view" | "click" | "join") {
+    if (!user) return;
+    api.user.track(Number(user.id), Number(club.id), type).catch(() => {});
+  }
+
   async function handleJoin() {
     if (!user || joined || joining) return;
     setJoining(true);
     try {
       await api.user.joinCommunity(Number(user.id), Number(club.id));
+      track("join");
       setJoined(true);
       refresh();
     } catch (err) {
@@ -30,6 +37,11 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
     } finally {
       setJoining(false);
     }
+  }
+
+  function handleView() {
+    track("click");
+    router.push(`/club/${club.id}`);
   }
 
   return (
@@ -81,10 +93,22 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
           </div>
         )}
 
-        {/* Score */}
+        {/* Match score — color-coded by reason type (content/collab/popularity) */}
         {club.score != null && (
-          <div className="text-[10px] text-slate-400">
-            {Math.round(club.score * 100)}% match
+          <div>
+            <span
+              className={`text-[11px] font-semibold ${
+                club.reasonType === "content"
+                  ? "text-emerald-600"
+                  : club.reasonType === "collab"
+                  ? "text-blue-600"
+                  : club.reasonType === "popularity"
+                  ? "text-amber-600"
+                  : "text-slate-500"
+              }`}
+            >
+              {Math.round(club.score * 100)}% match
+            </span>
           </div>
         )}
 
@@ -94,7 +118,7 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
             variant="outline"
             size="sm"
             className="text-xs h-8 text-slate-700 border-slate-300 hover:bg-slate-50"
-            onClick={() => router.push(`/club/${club.id}`)}
+            onClick={handleView}
           >
             View
           </Button>

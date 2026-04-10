@@ -140,6 +140,15 @@ export const api = {
       request(`/api/user/communities?userId=${userId}`, {
         method: "GET",
       }),
+    track: (
+      userId: number,
+      communityId: number,
+      type: "view" | "click" | "rsvp" | "join"
+    ): Promise<{ ok: boolean }> =>
+      request("/api/user/track", {
+        method: "POST",
+        body: JSON.stringify({ userId, communityId, type }),
+      }),
   },
   clubs: {
     requestAdminAccess: (clubId: number, justification: string) =>
@@ -192,11 +201,14 @@ export const api = {
       request("/api/tags", { method: "GET" }),
   },
   activity: {
-  getFeed: () =>
-    request("/api/activity/feed", { method: "GET" }),
+    getFeed: (userId: number) =>
+      request("/api/activity/feed", {
+        method: "GET",
+        headers: { "x-user-id": String(userId) },
+      }),
 
-  getUpcoming: () =>
-    request("/api/activity/upcoming", { method: "GET" }),
+    getUpcoming: () =>
+      request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {
     create: (name: string): Promise<Community> =>
@@ -211,6 +223,10 @@ export const api = {
       }),
     getRecommended: (userId: number): Promise<Community[]> =>
       request(`/api/community/recommend?userId=${userId}`, { method: "GET" }),
+    getExplore: (userId: number, topK = 10): Promise<Community[]> =>
+      request(`/api/community/explore?userId=${userId}&topK=${topK}`, {
+        method: "GET",
+      }),
     getById: (id: number): Promise<Community> =>
       request(`/api/community/get?id=${id}`, { method: "GET" }),
     update: (communityId: number, data: { name?: string; description?: string; avatarUrl?: string | null }) =>

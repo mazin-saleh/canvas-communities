@@ -196,11 +196,14 @@ export const api = {
       request("/api/tags", { method: "GET" }),
   },
   activity: {
-  getFeed: () =>
-    request("/api/activity/feed", { method: "GET" }),
+    getFeed: (userId: number) =>
+      request("/api/activity/feed", {
+        method: "GET",
+        headers: { "x-user-id": String(userId) },
+      }),
 
-  getUpcoming: () =>
-    request("/api/activity/upcoming", { method: "GET" }),
+    getUpcoming: () =>
+      request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {
     create: (name: string): Promise<Community> =>

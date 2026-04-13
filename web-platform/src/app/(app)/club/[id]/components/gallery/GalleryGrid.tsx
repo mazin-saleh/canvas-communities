@@ -43,7 +43,7 @@ export default function GalleryGrid({
   }, [items, selectedCategory]);
 
   return (
-    <section className="mt-2 flex h-[70vh] max-h-[48rem] flex-col overflow-hidden rounded-lg border border-gray-300 bg-[#f7f7f7] p-2">
+    <section className="flex h-full min-h-0 flex-col gap-3">
       <div className="mb-2 flex flex-wrap gap-2 shrink-0">
         {categories.map((category) => (
           <button
@@ -57,7 +57,7 @@ export default function GalleryGrid({
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 pr-1">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {/* Inline add form — first cell, admin only */}
           {canDelete && onCreate && <InlineGalleryForm onSubmit={onCreate} />}

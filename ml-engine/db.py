@@ -6,7 +6,6 @@ Uses SQLAlchemy to talk to Postgres and automap to reflect Prisma's tables.
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, MetaData, text
-from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -21,26 +20,9 @@ engine = create_engine(DATABASE_URL)
 metadata = MetaData()
 metadata.reflect(bind=engine)
 
-# Turns the reflected tables into Python classes automatically.
-# After prepare(), we can do Base.classes.User, Base.classes.Community, etc.
-Base = automap_base(metadata=metadata)
-Base.prepare()
-
-# ── ORM classes — one per Prisma model ──────────────────────────────────────
-User           = Base.classes.User
-Community      = Base.classes.Community
-Tag            = Base.classes.Tag
-Membership     = Base.classes.Membership
-Interaction    = Base.classes.Interaction
-Recommendation = Base.classes.Recommendation
-
-# ── Prisma implicit join tables ──────────────────────────────────────────────
-# Prisma creates these for many-to-many relations. Columns are named "A" and "B"
-# in alphabetical order of the two model names.
-#   _CommunityTags: A = Community.id, B = Tag.id
-#   _UserInterests: A = Tag.id,       B = User.id
-community_tags = metadata.tables["_CommunityTags"]
-user_interests = metadata.tables["_UserInterests"]
+# Recommendation upserts use the reflected table directly. This avoids
+# import-time failures when other reflected ORM classes are unavailable.
+recommendation_table = metadata.tables.get("Recommendation")
 
 # Session factory — call Session() to open a DB conversation
 Session = sessionmaker(bind=engine)
@@ -208,6 +190,11 @@ def upsert_recommendations(records: list[dict]) -> None:
     if not records:
         return  # Nothing to write
 
+    if recommendation_table is None:
+        raise RuntimeError(
+            'Table "Recommendation" was not found. Run Prisma schema setup before ML writes.'
+        )
+
     with Session() as session:
         for record in records:
             # Convert numpy floats to Python floats (psycopg2 doesn't handle np.float64)
@@ -216,7 +203,7 @@ def upsert_recommendations(records: list[dict]) -> None:
             collab_score = float(record["collab_score"])
 
             # pg_insert adds ON CONFLICT support — standard SQL INSERT doesn't have this
-            stmt = pg_insert(Recommendation.__table__).values(
+            stmt = pg_insert(recommendation_table).values(
                 userId       = record["user_id"],
                 communityId  = record["community_id"],
                 score        = score,

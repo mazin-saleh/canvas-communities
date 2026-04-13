@@ -149,7 +149,7 @@ Container startup sequence used by web-platform/start.sh:
 - prisma db seed
 - npm run dev
 
-## 8) Context Update Protocol For This Folder (Mandatory)
+## 8) Repeat-Issue Logging Protocol For This Folder (Mandatory)
 
 Update this file whenever web-platform-specific context changes:
 
@@ -162,7 +162,7 @@ Update this file whenever web-platform-specific context changes:
 When updating:
 
 1. Edit the relevant section above.
-2. Add a new entry at top of Context Update Log.
+2. Add a new entry at top of the log only for recurring or likely-recurring issues.
 3. If the change affects multiple master folders, also add a short handoff note under Root AGENTS Handoff Notes.
 
 ## 9) Root AGENTS Handoff Notes
@@ -172,32 +172,15 @@ Use this section to note cross-folder updates that must be reflected in root AGE
 - 2026-03-23 | Root baseline created | Root AGENTS.md now defines monorepo defaults; keep this file restricted to web-platform-specific rules.
 - 2026-03-23 | Initial split decision | This file intentionally keeps only web-platform-specific guidance.
 
-## 10) Context Update Log
+## 10) Repeat-Issue Log
+
+Purpose: Capture only recurring or likely-recurring web-platform issues and the prevention rule.
 
 Add newest entries at top.
 
-- 2026-04-13 | Button text contrast rule | Added rule 7 requiring legible text color on dark button backgrounds (white text on dark bg by default, not black).
+- 2026-04-13 | Club below-banner height contract | On desktop, everything below the club banner/logo must fill the remaining app-layout height; keep page shell non-scrolling and allow only the shared tab content window to scroll.
 
-- 2026-04-12 | Create community modal flow | Moved create-community into a reusable Radix dialog opened from the app layout/sidebar, while keeping the direct route as a centered modal wrapper.
+- 2026-04-13 | Club shared-frame layout | Keep /club views inside one viewport-filling content frame with a single desktop scroll surface; avoid per-tab container heights or nested scrollers.
 
-- 2026-03-31 | Safe startup schema sync gate | Updated web-platform/start.sh behavior so Prisma data-loss warnings no longer crash startup by default; destructive schema apply now requires PRISMA_ACCEPT_DATA_LOSS=true.
-
-- 2026-03-28 | Security QA integration coverage | Added route-level security integration tests for IDOR, privilege escalation, and ABAC enforcement in tests/security.integration.test.ts, plus a roster-protected member kick endpoint at src/app/api/clubs/[clubId]/members/[memberId]/kick/route.ts and npm run test:security command.
-
-- 2026-03-28 | Frontend authz sync integration | Replaced mock role derivation with server-synced access state, gated sidebar/admin links by platform and club roles, added ABAC-aware UI controls in club-admin content, and introduced admin-request submission/review UI surfaces.
-
-- 2026-03-27 | Role-request API baseline | Added guarded role-management APIs for club admin requests, super-admin review/approval, and club-owner role governance with audit logging under src/app/api/clubs/[clubId]/admin-requests, src/app/api/admin/requests, src/app/api/admin/requests/[requestId]/approve, and src/app/api/clubs/[clubId]/manage-roles.
-
-- 2026-03-27 | Server-only auth guard baseline | Added DB-validated server-side authorization utility baseline in src/lib/auth-guards.ts for session validation and fail-closed RBAC/ABAC guard checks prior to route-level business logic work.
-
-- 2026-03-26 | Club-admin RBAC shell baseline | Added mock role context + ProtectedRoute guard for club-admin routes and introduced a dedicated admin dashboard shell with role-gated navigation sections (General Info, Roster, Content, Settings).
-
-- 2026-03-26 | Dynamic sizing + fit-based breakpoints policy | Added a rule requiring fluid min/max sizing and fit-aware responsive behavior across iPhone, iPad, and desktop.
-
-- 2026-03-26 | Reusable custom component policy | Added a mandatory rule to extract repeated/reusable UI into modular custom components that stay consistent with web-platform design language.
-
-- 2026-03-26 | Figma implementation fidelity + responsive policy | Added explicit web-platform rule to implement Figma visuals exactly and allow only mobile-first, flexbox-based responsive sizing adjustments to prevent layout crowding across mobile/tablet/desktop.
-
-- 2026-03-23 | Communities payload alignment | Updated getUserCommunities service to return Community records (with tags and members) to match src/lib/api.ts user.getCommunities contract.
-- 2026-03-23 | Contract drift resolved | Aligned user/join-community route to POST and user/communities route to GET with query parameter to match src/lib/api.ts contracts.
-- 2026-03-23 | Scope refactor | Converted web-platform AGENTS.md to folder-only guidance and moved cross-repo intent to root AGENTS.md handoff.
+- 2026-04-13 | Startup script LF compatibility | Enforced LF-safe shell execution for container startup script usage to prevent sh parsing failures on macOS/Linux runtimes when files are checked out on Windows.
+- 2026-04-13 | API list response-shape mismatch | Prevent runtime breaks like clubs.filter errors by normalizing list responses (array vs {items}) at call sites or enforcing a single shared API client shape.

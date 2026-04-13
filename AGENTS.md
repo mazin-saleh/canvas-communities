@@ -97,14 +97,15 @@ A dependency may be added only when:
 - There is codebase-consistent evidence it helps overall goals.
 - The proposal is presented to the user before adoption.
 
-## 7) Documentation And Context Update Duty
+## 7) Documentation And Repeat-Issue Logging Duty
 
 Agents must update AGENTS/docs when behavior, contracts, commands, or architecture changes.
+The log sections in AGENTS files are for repeat-issue prevention only.
 
 Required pattern:
 
 1. Update the relevant AGENTS.md section(s).
-2. Add/update a context log entry.
+2. Add/update a repeat-issue log entry only if the issue is recurring or likely to recur.
 3. If impact crosses folders, record a handoff note between root and folder AGENTS files.
 
 ## 8) Security Baseline
@@ -122,9 +123,26 @@ Operational hygiene:
 - Never expose secrets or credentials in code, logs, or output.
 - Use environment variables and existing secret-management patterns.
 
-## 9) Root Context Log
+## 9) Copilot Skill Compatibility Modes
+
+For Copilot agent sessions in this repo, the names below are supported as **behavior modes** (not native tools/plugins):
+
+- **frontend-design**: When user asks to use this skill, prioritize distinctive, production-grade UI direction with intentional typography, color system, motion, and spacing. Avoid generic template aesthetics.
+- **superpowers**: When user asks to use this skill, follow a structured workflow: clarify goal, produce an actionable plan, execute in small validated steps, and include review/checkpoint discipline.
+- **caveman**: When user asks to use this skill, use terse, high-density responses (minimal filler, short phrasing) while keeping technical accuracy.
+
+Mode controls:
+
+- Activate when user explicitly asks for one of these skill names.
+- Deactivate on user request (for example: "normal mode" or "stop caveman").
+- If user instructions conflict with mode style, user instructions win.
+- Do not claim native tool invocation for these modes in Copilot sessions.
+
+## 10) Root Repeat-Issue Log
+
+Purpose: Capture only recurring or likely-recurring repo-wide issues and how to avoid them.
 
 Add newest entries at top.
 
-- 2026-03-23 | Folder coverage + security wording | Added frontend/ml-engine folder AGENTS status and refined security language to RBAC/RDAC + ACID compliance expectations.
-- 2026-03-23 | Initial baseline | Created monorepo-wide AGENTS rules from user-defined restrictions, habits, and conventions.
+- 2026-04-13 | Compose runtime CR normalization | Updated container startup command to strip carriage-return bytes from shell script execution path, preventing CRLF parse failures across Windows/macOS/Linux worktrees.
+- 2026-04-13 | Cross-platform line-ending guard | Added repository-level line-ending normalization policy so shell/env files remain LF-safe for Linux/macOS container runtimes used by the monorepo.

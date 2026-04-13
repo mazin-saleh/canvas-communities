@@ -16,10 +16,10 @@ type BoardMembersPanelProps = {
 
 export default function BoardMembersPanel({ sections, canEdit, communityId, rawMembers, onAssigned }: BoardMembersPanelProps) {
   return (
-    <section className="mt-2 rounded-lg border border-gray-300 bg-[#f7f7f7] p-3">
-      <h3 className="mb-2 text-xl font-semibold text-gray-900">Board Members</h3>
+    <section className="flex h-full min-h-0 flex-col gap-3">
+      <h3 className="shrink-0 text-xl font-semibold text-gray-900">Board Members</h3>
 
-      <div className="space-y-4">
+      <div className="min-h-0 flex-1 space-y-4 pr-1">
         {sections.map((section) => (
           <BoardSection
             key={section.id}

@@ -73,7 +73,7 @@ Container notes:
 - Folder Dockerfile exposes 8000
 - Compose may map host port differently at monorepo level
 
-## 6) Context Update Protocol For This Folder
+## 6) Repeat-Issue Logging Protocol For This Folder
 
 Update this file whenever ml-engine-specific context changes:
 
@@ -85,11 +85,13 @@ Update this file whenever ml-engine-specific context changes:
 When updating:
 
 1. Edit relevant sections.
-2. Add a new entry at top of Context Update Log.
+2. Add a new entry at top of the log only for recurring or likely-recurring issues.
 3. If cross-folder impact exists, add a handoff note to root AGENTS.md.
 
-## 7) Context Update Log
+## 7) Repeat-Issue Log
+
+Purpose: Capture only recurring or likely-recurring ml-engine issues and prevention guidance.
 
 Add newest entries at top.
 
-- 2026-03-23 | Initial folder guide | Created folder-scoped AGENTS.md for FastAPI ml-engine.
+- 2026-04-13 | Schema reflection hardening | Updated DB reflection usage to avoid import-time startup failure when reflected ORM class names are unavailable before schema sync.

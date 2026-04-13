@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useRole } from "@/context/RoleContext";
@@ -107,6 +107,7 @@ export default function ClubPageClient() {
   const [editingEvent, setEditingEvent] = useState<ApiEvent | null>(null);
   const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<ApiAnnouncement | null>(null);
+  const [activeTab, setActiveTab] = useState("announcements");
 
   const communityId = routeId ? Number(routeId) : 0;
   const isNumericId = !isNaN(communityId) && communityId > 0;
@@ -376,6 +377,8 @@ export default function ClubPageClient() {
   }));
 
   const tabStyle = "rounded-none border-b-2 border-transparent px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-base sm:text-lg lg:text-xl font-semibold text-gray-500 shadow-none data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-orange-500 data-[state=active]:shadow-none";
+  const panelShellClass = "mt-3 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-gray-300 bg-[#f7f7f7] shadow-sm";
+  const panelContentClass = "flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-5";
 
   return (
     <MainLayout
@@ -393,59 +396,67 @@ export default function ClubPageClient() {
       upcomingMeetings={upcomingMeetings}
       headerOverlayAction={<ClubAdminPanelButton clubId={club.id} />}
     >
-      <Tabs defaultValue="announcements" className="w-full">
-        <TabsList className="h-auto w-full justify-start gap-2 rounded-none border-b border-gray-300 bg-transparent p-0">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex h-full min-h-0 w-full flex-1 flex-col"
+      >
+        <TabsList className="h-auto w-full shrink-0 justify-start gap-2 rounded-none border-b border-gray-300 bg-transparent p-0">
           <TabsTrigger value="announcements" className={tabStyle}>Announcements</TabsTrigger>
           <TabsTrigger value="events" className={tabStyle}>Events</TabsTrigger>
           <TabsTrigger value="gallery" className={tabStyle}>Gallery</TabsTrigger>
           <TabsTrigger value="members" className={tabStyle}>Board Members</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="announcements">
-          <AnnouncementsPanel
-            announcements={normalizedAnnouncements}
-            canEdit={canManageAnnouncements}
-            onCreate={canManageAnnouncements ? handleCreateAnnouncement : undefined}
-            onEdit={(id) => {
-              const a = announcements.find(x => x.id === Number(id));
-              if (a) { setEditingAnnouncement(a); setAnnouncementModalOpen(true); }
-            }}
-            onDelete={(id) => handleDeleteAnnouncement(Number(id))}
-            onTogglePin={(id, pinned) => handleTogglePin(Number(id), pinned)}
-          />
-        </TabsContent>
+        <div className={panelShellClass}>
+          <div className={panelContentClass}>
+            {activeTab === "announcements" && (
+              <AnnouncementsPanel
+                announcements={normalizedAnnouncements}
+                canEdit={canManageAnnouncements}
+                onCreate={canManageAnnouncements ? handleCreateAnnouncement : undefined}
+                onEdit={(id) => {
+                  const a = announcements.find(x => x.id === Number(id));
+                  if (a) { setEditingAnnouncement(a); setAnnouncementModalOpen(true); }
+                }}
+                onDelete={(id) => handleDeleteAnnouncement(Number(id))}
+                onTogglePin={(id, pinned) => handleTogglePin(Number(id), pinned)}
+              />
+            )}
 
-        <TabsContent value="events">
-          <EventsContainer
-            events={normalizedEvents}
-            canEdit={canManageEvents}
-            onCreate={canManageEvents ? handleCreateEvent : undefined}
-            onEditEvent={(id) => {
-              const e = events.find(x => x.id === Number(id));
-              if (e) { setEditingEvent(e); setEventModalOpen(true); }
-            }}
-            onDeleteEvent={(id) => handleDeleteEvent(Number(id))}
-          />
-        </TabsContent>
+            {activeTab === "events" && (
+              <EventsContainer
+                events={normalizedEvents}
+                canEdit={canManageEvents}
+                onCreate={canManageEvents ? handleCreateEvent : undefined}
+                onEditEvent={(id) => {
+                  const e = events.find(x => x.id === Number(id));
+                  if (e) { setEditingEvent(e); setEventModalOpen(true); }
+                }}
+                onDeleteEvent={(id) => handleDeleteEvent(Number(id))}
+              />
+            )}
 
-        <TabsContent value="gallery">
-          <GalleryGrid
-            items={normalizedGallery}
-            canDelete={canManageGallery}
-            onCreate={canManageGallery ? handleAddGalleryImage : undefined}
-            onDelete={(id) => handleDeleteGalleryImage(Number(id))}
-          />
-        </TabsContent>
+            {activeTab === "gallery" && (
+              <GalleryGrid
+                items={normalizedGallery}
+                canDelete={canManageGallery}
+                onCreate={canManageGallery ? handleAddGalleryImage : undefined}
+                onDelete={(id) => handleDeleteGalleryImage(Number(id))}
+              />
+            )}
 
-        <TabsContent value="members">
-          <BoardMembersPanel
-            sections={boardSections}
-            canEdit={canManageRoster}
-            communityId={communityId}
-            rawMembers={club.members}
-            onAssigned={reloadClub}
-          />
-        </TabsContent>
+            {activeTab === "members" && (
+              <BoardMembersPanel
+                sections={boardSections}
+                canEdit={canManageRoster}
+                communityId={communityId}
+                rawMembers={club.members}
+                onAssigned={reloadClub}
+              />
+            )}
+          </div>
+        </div>
       </Tabs>
 
       {/* Event Form Modal */}

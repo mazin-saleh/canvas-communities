@@ -173,7 +173,7 @@ export async function recommendCommunities(userId: number) {
     try {
       const res = await fetch(
         `${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`,
-        { method: 'POST', signal: AbortSignal.timeout(5000) }
+        { method: 'POST', signal: AbortSignal.timeout(30000) }
       );
       if (res.ok) {
         // Re-fetch the now-populated recommendations

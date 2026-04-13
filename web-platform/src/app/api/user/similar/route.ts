@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const mlUrl = process.env.PYTHON_BACKEND_URL ?? "http://localhost:8000";
     const res = await fetch(
       `${mlUrl}/similar-users/${userId}?top_k=${topKParam}`,
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(30000) }
     );
 
     if (!res.ok) {

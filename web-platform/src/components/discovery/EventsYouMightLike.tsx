@@ -37,7 +37,9 @@ export default function EventsYouMightLike({
         {!collapsed ? (
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-orange-500" />
-            <h3 className="text-sm font-semibold text-slate-900">Top picks for you</h3>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Top picks for you
+            </h3>
           </div>
         ) : (
           <Sparkles className="mx-auto h-4 w-4 text-orange-500" />

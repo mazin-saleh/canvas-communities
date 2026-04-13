@@ -44,7 +44,7 @@ export default function DiscoveryPage() {
 
   const toggleFilter = (label: string) => {
     setActiveFilters((prev) =>
-      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label]
+      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label],
     );
   };
 
@@ -72,7 +72,9 @@ export default function DiscoveryPage() {
           id: String(c.id),
           name: c.name,
           description: c.description || "Club description coming soon.",
-          tags: (c.tags || []).map((t: any) => (t && t.name ? t.name : String(t || ""))),
+          tags: (c.tags || []).map((t: any) =>
+            t && t.name ? t.name : String(t || ""),
+          ),
           nextMeeting: {
             title: (c.nextMeeting && c.nextMeeting.title) || "General Meeting",
             datetime: (c.nextMeeting && c.nextMeeting.datetime) || "TBD",
@@ -91,27 +93,31 @@ export default function DiscoveryPage() {
         setClubs(mapped);
 
         // Same shape transform for serendipity picks so DiscoveryClubCard can render them
-        const mappedExplore = (Array.isArray(explore) ? explore : []).map((c: any) => ({
-          id: String(c.id),
-          name: c.name,
-          description: c.description || "Club description coming soon.",
-          tags: (c.tags || []).map((t: any) => (t && t.name ? t.name : String(t || ""))),
-          nextMeeting: {
-            title: "General Meeting",
-            datetime: "TBD",
-            location: "Campus",
-          },
-          logoSrc: c.avatarUrl || "/avatars/placeholder.png",
-          bannerSrc: c.bannerUrl || c.banner || undefined,
-          score: c.score,
-          contentScore: c.contentScore,
-          collabScore: c.collabScore,
-          reason: c.reason,
-          reasonDetail: c.reasonDetail,
-          reasonType: c.reasonType,
-          endorsedBy: c.endorsedBy,
-          endorsementCount: c.endorsementCount,
-        }));
+        const mappedExplore = (Array.isArray(explore) ? explore : []).map(
+          (c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            description: c.description || "Club description coming soon.",
+            tags: (c.tags || []).map((t: any) =>
+              t && t.name ? t.name : String(t || ""),
+            ),
+            nextMeeting: {
+              title: "General Meeting",
+              datetime: "TBD",
+              location: "Campus",
+            },
+            logoSrc: c.avatarUrl || "/avatars/placeholder.png",
+            bannerSrc: c.bannerUrl || c.banner || undefined,
+            score: c.score,
+            contentScore: c.contentScore,
+            collabScore: c.collabScore,
+            reason: c.reason,
+            reasonDetail: c.reasonDetail,
+            reasonType: c.reasonType,
+            endorsedBy: c.endorsedBy,
+            endorsementCount: c.endorsementCount,
+          }),
+        );
         setExploreClubs(mappedExplore);
       } catch (err: any) {
         console.error("Failed to load recommendations", err);
@@ -130,22 +136,27 @@ export default function DiscoveryPage() {
     const q = query.trim().toLowerCase();
     return clubsToFilter.filter((club: any) => {
       const name = (club.name || "").toLowerCase();
-      const tagNames: string[] = (club.tags || []).map((t: any) => (t || "").toLowerCase());
+      const tagNames: string[] = (club.tags || []).map((t: any) =>
+        (t || "").toLowerCase(),
+      );
       const matchesQuery =
         !q || name.includes(q) || tagNames.some((tag) => tag.includes(q));
       const matchesFilters =
         activeFilters.length === 0 ||
         tagNames.some((tag) =>
-          activeFilters.some((filter) => tag === filter.toLowerCase())
+          activeFilters.some((filter) => tag === filter.toLowerCase()),
         );
       return matchesQuery && matchesFilters;
     });
   };
 
-  const forYouClubs = useMemo(() => applyFilters(clubs), [clubs, query, activeFilters]);
+  const forYouClubs = useMemo(
+    () => applyFilters(clubs),
+    [clubs, query, activeFilters],
+  );
   const filteredExploreClubs = useMemo(
     () => applyFilters(exploreClubs),
-    [exploreClubs, query, activeFilters]
+    [exploreClubs, query, activeFilters],
   );
 
   const interestRows = useMemo(() => {
@@ -154,8 +165,10 @@ export default function DiscoveryPage() {
       .map((interest) => {
         const matched = applyFilters(
           clubs.filter((c) =>
-            (c.tags || []).some((t: any) => t.toLowerCase() === interest.toLowerCase())
-          )
+            (c.tags || []).some(
+              (t: any) => t.toLowerCase() === interest.toLowerCase(),
+            ),
+          ),
         );
         return { interest, clubs: matched };
       })
@@ -222,7 +235,9 @@ export default function DiscoveryPage() {
         <div className="py-6 pl-4 pr-0 sm:pl-6 sm:pr-0 lg:pl-8 lg:pr-0">
           <div className="space-y-8">
             {loading ? (
-              <p className="text-sm text-slate-500 py-8">Loading recommendations…</p>
+              <p className="text-sm text-slate-500 py-8">
+                Loading recommendations…
+              </p>
             ) : error ? (
               <p className="text-sm text-red-500 py-8">Error: {error}</p>
             ) : (
@@ -241,7 +256,8 @@ export default function DiscoveryPage() {
                   <DiscoveryCarouselRow
                     title={
                       <>
-                        You might <span className="text-orange-500">also like</span>
+                        You might{" "}
+                        <span className="text-orange-500">also like</span>
                       </>
                     }
                     clubs={filteredExploreClubs}

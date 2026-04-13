@@ -119,7 +119,9 @@ export default function CreateCommunityDialog({
                       variant="outline"
                       className="text-white hover:text-stone-900"
                       onClick={() =>
-                        document.getElementById("community-logo-upload")?.click()
+                        document
+                          .getElementById("community-logo-upload")
+                          ?.click()
                       }
                     >
                       Choose Logo
@@ -153,7 +155,9 @@ export default function CreateCommunityDialog({
                       type="button"
                       variant="outline"
                       onClick={() =>
-                        document.getElementById("community-banner-upload")?.click()
+                        document
+                          .getElementById("community-banner-upload")
+                          ?.click()
                       }
                     >
                       Choose Banner

@@ -20,7 +20,12 @@ type GalleryGridProps = {
   onDelete?: (id: string) => void;
 };
 
-export default function GalleryGrid({ items, canDelete, onCreate, onDelete }: GalleryGridProps) {
+export default function GalleryGrid({
+  items,
+  canDelete,
+  onCreate,
+  onDelete,
+}: GalleryGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedItem, setSelectedItem] = useState<GalleryMedia | null>(null);
 
@@ -55,9 +60,7 @@ export default function GalleryGrid({ items, canDelete, onCreate, onDelete }: Ga
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {/* Inline add form — first cell, admin only */}
-          {canDelete && onCreate && (
-            <InlineGalleryForm onSubmit={onCreate} />
-          )}
+          {canDelete && onCreate && <InlineGalleryForm onSubmit={onCreate} />}
 
           {visibleItems.map((item) => (
             <div key={item.id} className="group relative h-full">
@@ -65,7 +68,10 @@ export default function GalleryGrid({ items, canDelete, onCreate, onDelete }: Ga
               {canDelete && onDelete && (
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
                   className="absolute right-1 top-1 z-10 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
                   title="Delete"
                 >
@@ -77,7 +83,9 @@ export default function GalleryGrid({ items, canDelete, onCreate, onDelete }: Ga
         </div>
 
         {visibleItems.length === 0 && !canDelete && (
-          <p className="p-2 text-sm text-gray-500">No gallery media found for this category.</p>
+          <p className="p-2 text-sm text-gray-500">
+            No gallery media found for this category.
+          </p>
         )}
       </div>
 

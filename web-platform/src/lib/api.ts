@@ -108,7 +108,7 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   }
 
   console.log("[api] response <", url, data);
-  return data;
+  return data as T;
 }
 
 export const api = {
@@ -208,13 +208,13 @@ export const api = {
       request("/api/tags", { method: "GET" }),
   },
   activity: {
-    getFeed: (userId: number) =>
+    getFeed: (userId: number): Promise<any[]> =>
       request("/api/activity/feed", {
         method: "GET",
         headers: { "x-user-id": String(userId) },
       }),
 
-    getUpcoming: () =>
+    getUpcoming: (): Promise<any[]> =>
       request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {

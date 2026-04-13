@@ -24,13 +24,13 @@ export default function GalleryLightbox({
       <DialogContent className="max-w-3xl border-gray-300 bg-white p-4">
         <DialogTitle className="sr-only">{item.alt}</DialogTitle>
 
-        <div className="overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+        <div className="flex aspect-[16/10] max-h-[70vh] items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-950">
           {item.type === "video" ? (
             <video
               src={item.src}
               controls
               preload="metadata"
-              className="h-auto w-full object-cover"
+              className="h-full w-full object-contain"
             />
           ) : (
             <Image
@@ -38,7 +38,7 @@ export default function GalleryLightbox({
               alt={item.alt}
               width={1600}
               height={900}
-              className="h-auto w-full object-cover"
+              className="h-full w-full object-contain"
               loading="lazy"
             />
           )}

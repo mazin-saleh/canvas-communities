@@ -103,20 +103,12 @@ export default function EventCard({ event, canEdit, onEdit, onDelete }: EventCar
               )}
             </div>
 
-            <span className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-              RSVP&apos;d
-              <svg
-                className="h-3.5 w-3.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </span>
+            <button
+              type="button"
+              className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+            >
+              RSVP
+            </button>
           </div>
         </div>
       </div>

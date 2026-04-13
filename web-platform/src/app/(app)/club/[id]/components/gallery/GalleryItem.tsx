@@ -13,9 +13,9 @@ export default function GalleryItem({ item, onSelect }: GalleryItemProps) {
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="group overflow-hidden rounded-md border border-gray-300 bg-white text-left"
+      className="group relative aspect-[4/3] h-full w-full overflow-hidden rounded-xl border border-gray-300 bg-white text-left shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
     >
-      <div className="relative h-28 w-full sm:h-32 lg:h-36">
+      <div className="absolute inset-0">
         {item.type === "video" ? (
           <video
             src={item.src}
@@ -29,21 +29,25 @@ export default function GalleryItem({ item, onSelect }: GalleryItemProps) {
             src={item.thumbnailSrc || item.src}
             alt={item.alt}
             fill
-            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
             loading="lazy"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         )}
       </div>
 
-      {(item.caption || item.category) && (
-        <div className="px-2 py-1.5">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 text-white">
+        <div className="space-y-0.5">
           {item.caption && (
-            <p className="line-clamp-1 text-xs font-medium text-gray-800">{item.caption}</p>
+            <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">
+              {item.caption}
+            </p>
           )}
-          <p className="text-[10px] text-gray-500">{item.category}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-white/80">
+            {item.category}
+          </p>
         </div>
-      )}
+      </div>
     </button>
   );
 }

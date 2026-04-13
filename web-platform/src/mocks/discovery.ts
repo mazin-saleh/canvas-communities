@@ -12,4 +12,9 @@ export type DiscoveryClub = {
   reasonDetail?: string;
   reasonType?: "content" | "collab" | "popularity";
   matchedTags?: string[];
+  nextMeeting?: {
+    title: string;
+    datetime: string;
+    location: string;
+  };
 };

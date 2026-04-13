@@ -60,8 +60,7 @@ export default function DiscoveryCarouselRow({ title, clubs, rowId }: Props) {
       <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2>
 
       <div className="relative group/carousel">
-        {/* Edge fades */}
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-white/95 to-transparent z-10" />
+        {/* Right edge fade */}
         <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-white/95 to-transparent z-10" />
 
         {/* Scroll container */}
@@ -80,7 +79,7 @@ export default function DiscoveryCarouselRow({ title, clubs, rowId }: Props) {
               <div
                 key={club.id}
                 data-discovery-card="true"
-                className="snap-start shrink-0 w-[280px] sm:w-[300px] lg:w-[320px]"
+                className="snap-start shrink-0 w-[340px] sm:w-[370px] lg:w-[400px]"
               >
                 <DiscoveryClubCard club={club} />
               </div>

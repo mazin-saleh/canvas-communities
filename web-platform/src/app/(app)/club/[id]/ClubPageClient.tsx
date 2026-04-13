@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useRole } from "@/context/RoleContext";
@@ -15,19 +14,10 @@ import { type GalleryMedia } from "./components/gallery/galleryData";
 import BoardMembersPanel from "./components/board/BoardMembersPanel";
 import MainLayout from "./components/shell/MainLayout";
 import { type SocialLink } from "./components/shell/types";
-import { Circle, Facebook, Linkedin, MessageCircle, Plus } from "lucide-react";
+import { Circle, Facebook, Linkedin, MessageCircle } from "lucide-react";
 import ClubAdminPanelButton from "@/components/ClubAdminPanelButton";
 import EventFormModal from "./components/events/EventFormModal";
 import AnnouncementFormModal from "./components/AnnouncementFormModal";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type ClubMember = {
   id: string | number;
@@ -117,9 +107,6 @@ export default function ClubPageClient() {
   const [editingEvent, setEditingEvent] = useState<ApiEvent | null>(null);
   const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<ApiAnnouncement | null>(null);
-  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
-  const [galleryUrl, setGalleryUrl] = useState("");
-  const [galleryCaption, setGalleryCaption] = useState("");
 
   const communityId = routeId ? Number(routeId) : 0;
   const isNumericId = !isNaN(communityId) && communityId > 0;
@@ -146,41 +133,34 @@ export default function ClubPageClient() {
   const canManageEvents = isOwner || userPermissions.includes("canManageEvents");
   const canManageAnnouncements = isOwner || userPermissions.includes("canManageAnnouncements");
   const canManageGallery = isOwner || userPermissions.includes("canManageGallery");
+  const canManageRoster = isOwner || userPermissions.includes("canManageRoster");
 
   // Load club data
+  const reloadClub = useCallback(async () => {
+    if (!isNumericId) return;
+    try {
+      const res = await fetch(`/api/community/get?id=${communityId}`);
+      if (!res.ok) throw new Error("Not found");
+      const data = await res.json();
+      setClub({
+        id: data.id,
+        name: data.name ?? "Untitled Club",
+        description: data.description ?? "",
+        tags: data.tags ?? [],
+        avatarUrl: data.avatarUrl,
+        members: data.members ?? [],
+        owner: data.owner ?? null,
+      });
+      setJoined(Boolean(data.members?.some((m: ClubMember) => Number(m.userId) === Number(currentUserId))));
+    } catch {
+      setClub(null);
+    }
+  }, [communityId, isNumericId, currentUserId]);
+
   useEffect(() => {
     if (!routeId) return;
-    let mounted = true;
-
-    async function load() {
-      if (!isNumericId) {
-        setClub(null);
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/community/get?id=${communityId}`);
-        if (!res.ok) throw new Error("Not found");
-        const data = await res.json();
-        if (!mounted) return;
-        setClub({
-          id: data.id,
-          name: data.name ?? "Untitled Club",
-          description: data.description ?? "",
-          tags: data.tags ?? [],
-          avatarUrl: data.avatarUrl,
-          members: data.members ?? [],
-          owner: data.owner ?? null,
-        });
-        setJoined(Boolean(data.members?.some((m: ClubMember) => Number(m.userId) === Number(currentUserId))));
-      } catch {
-        if (mounted) setClub(null);
-      }
-    }
-
-    load();
-    return () => { mounted = false; };
-  }, [routeId, communityId, isNumericId, currentUserId]);
+    reloadClub();
+  }, [routeId, reloadClub]);
 
   // Load content data
   const loadEvents = useCallback(async () => {
@@ -273,12 +253,8 @@ export default function ClubPageClient() {
     await loadAnnouncements();
   };
 
-  const handleAddGalleryImage = async () => {
-    if (!galleryUrl.trim()) return;
-    await api.community.addGalleryImage(communityId, { url: galleryUrl, caption: galleryCaption });
-    setGalleryUrl("");
-    setGalleryCaption("");
-    setGalleryModalOpen(false);
+  const handleAddGalleryImage = async (draft: { url: string; caption: string; category: string }) => {
+    await api.community.addGalleryImage(communityId, { url: draft.url, caption: draft.caption });
     await loadGallery();
   };
 
@@ -426,16 +402,10 @@ export default function ClubPageClient() {
         </TabsList>
 
         <TabsContent value="announcements">
-          {canManageAnnouncements && (
-            <div className="mt-2 mb-2">
-              <Button onClick={() => { setEditingAnnouncement(null); setAnnouncementModalOpen(true); }} className="bg-orange-500 text-white hover:bg-orange-600">
-                <Plus className="mr-1 h-4 w-4" /> New Announcement
-              </Button>
-            </div>
-          )}
           <AnnouncementsPanel
             announcements={normalizedAnnouncements}
             canEdit={canManageAnnouncements}
+            onCreate={canManageAnnouncements ? handleCreateAnnouncement : undefined}
             onEdit={(id) => {
               const a = announcements.find(x => x.id === Number(id));
               if (a) { setEditingAnnouncement(a); setAnnouncementModalOpen(true); }
@@ -446,16 +416,10 @@ export default function ClubPageClient() {
         </TabsContent>
 
         <TabsContent value="events">
-          {canManageEvents && (
-            <div className="mt-2 mb-2">
-              <Button onClick={() => { setEditingEvent(null); setEventModalOpen(true); }} className="bg-orange-500 text-white hover:bg-orange-600">
-                <Plus className="mr-1 h-4 w-4" /> Add Event
-              </Button>
-            </div>
-          )}
           <EventsContainer
             events={normalizedEvents}
             canEdit={canManageEvents}
+            onCreate={canManageEvents ? handleCreateEvent : undefined}
             onEditEvent={(id) => {
               const e = events.find(x => x.id === Number(id));
               if (e) { setEditingEvent(e); setEventModalOpen(true); }
@@ -465,22 +429,22 @@ export default function ClubPageClient() {
         </TabsContent>
 
         <TabsContent value="gallery">
-          {canManageGallery && (
-            <div className="mt-2 mb-2">
-              <Button onClick={() => setGalleryModalOpen(true)} className="bg-orange-500 text-white hover:bg-orange-600">
-                <Plus className="mr-1 h-4 w-4" /> Add Image
-              </Button>
-            </div>
-          )}
           <GalleryGrid
             items={normalizedGallery}
             canDelete={canManageGallery}
+            onCreate={canManageGallery ? handleAddGalleryImage : undefined}
             onDelete={(id) => handleDeleteGalleryImage(Number(id))}
           />
         </TabsContent>
 
         <TabsContent value="members">
-          <BoardMembersPanel sections={boardSections} />
+          <BoardMembersPanel
+            sections={boardSections}
+            canEdit={canManageRoster}
+            communityId={communityId}
+            rawMembers={club.members}
+            onAssigned={reloadClub}
+          />
         </TabsContent>
       </Tabs>
 
@@ -518,28 +482,6 @@ export default function ClubPageClient() {
         onSubmit={editingAnnouncement ? handleUpdateAnnouncement : handleCreateAnnouncement}
       />
 
-      {/* Gallery Image Modal */}
-      <Dialog open={galleryModalOpen} onOpenChange={setGalleryModalOpen}>
-        <DialogContent className="max-w-sm gap-0 overflow-hidden rounded-xl border-stone-200 p-0 shadow-xl">
-          <DialogHeader className="border-b border-stone-100 px-5 py-4">
-            <DialogTitle className="text-base font-semibold text-stone-900">Add Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 px-5 py-4">
-            <div>
-              <Label className="block text-xs font-medium text-stone-600 mb-1">Image URL <span className="text-red-500">*</span></Label>
-              <Input value={galleryUrl} onChange={(e) => setGalleryUrl(e.target.value)} placeholder="https://..." className="h-9 rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-colors" />
-            </div>
-            <div>
-              <Label className="block text-xs font-medium text-stone-600 mb-1">Caption</Label>
-              <Input value={galleryCaption} onChange={(e) => setGalleryCaption(e.target.value)} placeholder="Optional caption" className="h-9 rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-colors" />
-            </div>
-          </div>
-          <DialogFooter className="border-t border-stone-100 px-5 py-3 bg-stone-50/50">
-            <Button variant="outline" onClick={() => setGalleryModalOpen(false)} className="h-9 rounded-md border-stone-300 text-sm text-stone-600 hover:bg-stone-100">Cancel</Button>
-            <Button onClick={handleAddGalleryImage} disabled={!galleryUrl.trim()} className="h-9 rounded-md bg-orange-600 text-sm font-medium text-white hover:bg-orange-700 disabled:bg-stone-300 disabled:text-stone-500">Add</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </MainLayout>
   );
 }

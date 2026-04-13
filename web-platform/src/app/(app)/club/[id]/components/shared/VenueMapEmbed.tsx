@@ -26,9 +26,13 @@ export default function VenueMapEmbed({
   if (!coordinates) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-100 text-xs text-gray-400 ${className || ""}`}
+        className={`flex flex-col items-center justify-center gap-1.5 bg-gray-100 px-3 text-center ${className || ""}`}
       >
-        No map
+        <svg width="20" height="26" viewBox="0 0 24 32" fill="none" className="shrink-0 opacity-30">
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" fill="currentColor" className="text-gray-400" />
+          <circle cx="12" cy="12" r="5" fill="white" />
+        </svg>
+        <span className="text-[11px] leading-tight text-gray-400 line-clamp-2">{locationName}</span>
       </div>
     );
   }

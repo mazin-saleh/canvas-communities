@@ -56,7 +56,7 @@ export default function AdminLayout({ clubId, children }: AdminLayoutProps) {
 
   return (
     <div
-      className="min-h-screen bg-[var(--admin-shell-bg)]"
+      className="flex min-h-full flex-col bg-[var(--admin-shell-bg)]"
       style={
         {
           "--admin-brand-orange": adminTheme.colors.brandOrange,
@@ -124,7 +124,7 @@ export default function AdminLayout({ clubId, children }: AdminLayoutProps) {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <main className="mx-auto flex-1 w-full max-w-4xl px-4 py-6 sm:px-6">
         {children}
       </main>
     </div>

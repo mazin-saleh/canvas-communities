@@ -1,12 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, CircleAlert } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle2, CircleAlert, Upload, X } from "lucide-react";
 import TagManager from "./TagManager";
 
 const DESCRIPTION_LIMIT = 280;
@@ -29,23 +29,24 @@ type GeneralInfoFormProps = {
 type ValidationErrors = {
   clubName?: string;
   clubDesc?: string;
-  avatarUrl?: string;
-  bannerUrl?: string;
 };
-
-function isValidUrl(value: string): boolean {
-  if (!value.trim()) return true; // empty is fine
-  try {
-    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-    new URL(withProtocol);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function serializeDraft(draft: ClubIdentityDraft): string {
   return JSON.stringify(draft);
+}
+
+async function uploadFile(file: File, previousUrl?: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (previousUrl) formData.append("previousUrl", previousUrl);
+
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Upload failed");
+  }
+  const data = await res.json();
+  return data.url;
 }
 
 export default function GeneralInfoForm({ initialValue, readOnly = false, onSave }: GeneralInfoFormProps) {
@@ -54,18 +55,23 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
+  // Upload state
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
   const errors = useMemo<ValidationErrors>(() => {
     const e: ValidationErrors = {};
     if (!draft.clubName.trim()) e.clubName = "Club name is required.";
     else if (draft.clubName.trim().length > CLUB_NAME_LIMIT) e.clubName = `Max ${CLUB_NAME_LIMIT} characters.`;
     if (!draft.clubDesc.trim()) e.clubDesc = "Description is required.";
     else if (draft.clubDesc.length > DESCRIPTION_LIMIT) e.clubDesc = `Max ${DESCRIPTION_LIMIT} characters.`;
-    if (draft.avatarUrl.trim() && !isValidUrl(draft.avatarUrl)) e.avatarUrl = "Invalid URL.";
-    if (draft.bannerUrl.trim() && !isValidUrl(draft.bannerUrl)) e.bannerUrl = "Invalid URL.";
     return e;
   }, [draft]);
 
-  const hasErrors = Boolean(errors.clubName) || Boolean(errors.clubDesc) || Boolean(errors.avatarUrl) || Boolean(errors.bannerUrl);
+  const hasErrors = Boolean(errors.clubName) || Boolean(errors.clubDesc);
   const isDirty = serializeDraft(draft) !== serializeDraft(savedSnapshot);
 
   const addTag = (tag: string): { ok: boolean; message?: string } => {
@@ -79,6 +85,41 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
 
   const removeTag = (tag: string) => {
     setDraft((c) => ({ ...c, clubTags: c.clubTags.filter((x) => x !== tag) }));
+  };
+
+  const handleLogoUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    setUploadingLogo(true);
+    try {
+      const url = await uploadFile(file, draft.avatarUrl || undefined);
+      setDraft((c) => ({ ...c, avatarUrl: url }));
+    } catch (err: any) {
+      setUploadError(err.message || "Logo upload failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }, [draft.avatarUrl]);
+
+  const handleBannerUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    setUploadingBanner(true);
+    try {
+      const url = await uploadFile(file, draft.bannerUrl || undefined);
+      setDraft((c) => ({ ...c, bannerUrl: url }));
+    } catch (err: any) {
+      setUploadError(err.message || "Banner upload failed");
+    } finally {
+      setUploadingBanner(false);
+    }
+  }, [draft.bannerUrl]);
+
+  const handleRemoveLogo = () => setDraft((c) => ({ ...c, avatarUrl: "" }));
+  const handleRemoveBanner = () => setDraft((c) => ({ ...c, bannerUrl: "" }));
+
+  const handleDrop = (e: React.DragEvent, handler: (file: File) => void) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) handler(file);
   };
 
   const handleSave = async () => {
@@ -118,65 +159,148 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
 
   return (
     <div className="pb-20">
+      {/* Upload error toast */}
+      {uploadError && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <CircleAlert className="h-4 w-4 shrink-0" />
+          {uploadError}
+          <button onClick={() => setUploadError(null)} className="ml-auto">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Section: Club Images */}
       <section className="mb-8 space-y-4">
         <h3 className="text-sm font-semibold text-stone-800">Club Images</h3>
 
+        {/* Logo upload */}
         <div>
-          <Label htmlFor="avatar-url" className="mb-1 block text-xs font-medium text-stone-600">Logo URL</Label>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-stone-200 bg-stone-100">
-              {draft.avatarUrl.trim() ? (
+          <Label className="mb-1 block text-xs font-medium text-stone-600">Club Logo</Label>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-stone-200 bg-stone-100">
+              {draft.avatarUrl ? (
                 <Image
-                  src={draft.avatarUrl.trim()}
+                  src={draft.avatarUrl}
                   alt="Club logo preview"
-                  width={40}
-                  height={40}
+                  width={64}
+                  height={64}
                   className="h-full w-full object-cover"
                   unoptimized
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-stone-400">
+                <div className="flex h-full w-full items-center justify-center text-sm font-bold text-stone-400">
                   {draft.clubName.slice(0, 2).toUpperCase() || "CC"}
                 </div>
               )}
             </div>
-            <Input
-              id="avatar-url"
-              value={draft.avatarUrl}
-              onChange={(e) => setDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
-              placeholder="https://example.com/logo.png"
-              disabled={readOnly}
-              className={[inputStyle, "flex-1", errors.avatarUrl ? "border-red-400" : ""].join(" ")}
-            />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={readOnly}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLogoUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={readOnly || uploadingLogo}
+                  onClick={() => logoInputRef.current?.click()}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploadingLogo ? "Uploading..." : draft.avatarUrl ? "Replace Logo" : "Upload Logo"}
+                </Button>
+                {draft.avatarUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={readOnly}
+                    onClick={handleRemoveLogo}
+                    className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-stone-400">JPEG, PNG, GIF, or WebP. Max 5 MB.</p>
+            </div>
           </div>
-          {errors.avatarUrl && <p className="mt-0.5 text-xs text-red-600">{errors.avatarUrl}</p>}
-          <p className="mt-1 text-xs text-stone-400">Paste a direct link to your club&apos;s logo image.</p>
         </div>
 
+        {/* Banner upload */}
         <div>
-          <Label htmlFor="banner-url" className="mb-1 block text-xs font-medium text-stone-600">Banner URL</Label>
-          {draft.bannerUrl.trim() && (
-            <div className="mb-2 relative h-24 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 sm:h-32">
+          <Label className="mb-1 block text-xs font-medium text-stone-600">Club Banner</Label>
+          {draft.bannerUrl ? (
+            <div className="group relative mb-2 h-24 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 sm:h-32">
               <Image
-                src={draft.bannerUrl.trim()}
+                src={draft.bannerUrl}
                 alt="Club banner preview"
                 fill
                 className="object-cover"
                 unoptimized
               />
+              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={readOnly || uploadingBanner}
+                  onClick={() => bannerInputRef.current?.click()}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Replace
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={readOnly}
+                  onClick={handleRemoveBanner}
+                  className="h-8 text-xs text-red-600"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Remove
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, handleBannerUpload)}
+              onClick={() => !readOnly && bannerInputRef.current?.click()}
+              className="flex h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 transition-colors hover:border-orange-400 hover:bg-orange-50/30 sm:h-36"
+            >
+              <Upload className="h-5 w-5 text-stone-400" />
+              <p className="text-xs text-stone-500">
+                {uploadingBanner ? "Uploading..." : "Click or drag an image to upload a banner"}
+              </p>
+              <p className="text-[10px] text-stone-400">Recommended: wide landscape image. Max 5 MB.</p>
             </div>
           )}
-          <Input
-            id="banner-url"
-            value={draft.bannerUrl}
-            onChange={(e) => setDraft((c) => ({ ...c, bannerUrl: e.target.value }))}
-            placeholder="https://example.com/banner.png"
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
             disabled={readOnly}
-            className={[inputStyle, errors.bannerUrl ? "border-red-400" : ""].join(" ")}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleBannerUpload(file);
+              e.target.value = "";
+            }}
           />
-          {errors.bannerUrl && <p className="mt-0.5 text-xs text-red-600">{errors.bannerUrl}</p>}
-          <p className="mt-1 text-xs text-stone-400">Paste a direct link to a wide banner image for your club page.</p>
         </div>
       </section>
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import AnnouncementItem from "./AnnouncementItem";
+import InlineAnnouncementForm from "./InlineAnnouncementForm";
 import {
   type AnnouncementCategory,
   type AnnouncementItemData,
@@ -9,15 +10,23 @@ import {
 
 type AnnouncementFilter = "all" | AnnouncementCategory;
 
+type AnnouncementDraft = {
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+};
+
 type AnnouncementsPanelProps = {
   announcements: (AnnouncementItemData & { pinned?: boolean })[];
   canEdit?: boolean;
+  onCreate?: (form: AnnouncementDraft) => Promise<void>;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onTogglePin?: (id: string, currentPinned: boolean) => void;
 };
 
-export default function AnnouncementsPanel({ announcements, canEdit, onEdit, onDelete, onTogglePin }: AnnouncementsPanelProps) {
+export default function AnnouncementsPanel({ announcements, canEdit, onCreate, onEdit, onDelete, onTogglePin }: AnnouncementsPanelProps) {
   const [activeFilter, setActiveFilter] = useState<AnnouncementFilter>("all");
 
   const visibleAnnouncements = useMemo(() => {
@@ -57,6 +66,9 @@ export default function AnnouncementsPanel({ announcements, canEdit, onEdit, onD
       </div>
 
       <div className="space-y-4">
+        {canEdit && onCreate && (
+          <InlineAnnouncementForm onSubmit={onCreate} />
+        )}
         {visibleAnnouncements.map((announcement) => (
           <AnnouncementItem
             key={announcement.id}

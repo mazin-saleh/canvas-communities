@@ -80,12 +80,18 @@ Route-group structure:
 - Only adjust for responsive fit and readability across viewport sizes; avoid changing the core visual design language.
 - Prevent element crowding/sandwiching at intermediate widths by using fluid widths, max-width constraints, and breakpoint-aware spacing.
 
-7. Modularize repeated UI into custom components:
+7. Ensure readable text contrast on all button states:
+
+- When a button has a dark background color (e.g. navy, slate-800, orange-600), its default text color must be white or a light color — never black or dark gray.
+- Only darken the text on hover/active if the background also lightens. The un-hovered state is what most users see, so it must be legible first.
+- Before shipping any button, mentally verify: "Is the text readable against the resting background color?"
+
+8. Modularize repeated UI into custom components:
 
 - Any UI that is used more than once, or is expected to be used repeatedly, must be extracted into a reusable custom component.
 - If something can be turned into a component while preserving design quality, it should be turned into a custom component aligned with this folder's visual language.
 
-8. Build responsive layouts with dynamic sizing and fit-aware breakpoints:
+9. Build responsive layouts with dynamic sizing and fit-aware breakpoints:
 
 - Use fluid sizing with explicit minimum and maximum constraints so components scale consistently across common screen ratios.
 - Define breakpoints by fit and readability, not only device labels: hide, collapse, or reflow elements when they do not comfortably fit.
@@ -169,6 +175,10 @@ Use this section to note cross-folder updates that must be reflected in root AGE
 ## 10) Context Update Log
 
 Add newest entries at top.
+
+- 2026-04-13 | Button text contrast rule | Added rule 7 requiring legible text color on dark button backgrounds (white text on dark bg by default, not black).
+
+- 2026-04-12 | Create community modal flow | Moved create-community into a reusable Radix dialog opened from the app layout/sidebar, while keeping the direct route as a centered modal wrapper.
 
 - 2026-03-31 | Safe startup schema sync gate | Updated web-platform/start.sh behavior so Prisma data-loss warnings no longer crash startup by default; destructive schema apply now requires PRISMA_ACCEPT_DATA_LOSS=true.
 

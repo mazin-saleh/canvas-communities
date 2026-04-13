@@ -10,7 +10,9 @@ type ClubSidebarProps = {
   clubTags: Array<string | { name?: string }>;
   joined: boolean;
   joining: boolean;
+  leaving: boolean;
   onJoin: () => void;
+  onLeave: () => void;
   socialLinks: SocialLink[];
   upcomingMeetings?: MeetingItem[];
 };
@@ -22,7 +24,9 @@ export default function ClubSidebar({
   clubTags,
   joined,
   joining,
+  leaving,
   onJoin,
+  onLeave,
   socialLinks,
   upcomingMeetings,
 }: ClubSidebarProps) {
@@ -35,7 +39,9 @@ export default function ClubSidebar({
         clubTags={clubTags}
         joined={joined}
         joining={joining}
+        leaving={leaving}
         onJoin={onJoin}
+        onLeave={onLeave}
       />
 
       <SocialLinks links={socialLinks} />

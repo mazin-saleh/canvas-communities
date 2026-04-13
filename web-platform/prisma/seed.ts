@@ -1207,6 +1207,287 @@ async function main() {
     },
   ],
   });
+
+  // ---------------------------------------------------------------------------
+  // 3D Printing Club — full mock data
+  // ---------------------------------------------------------------------------
+  const printClubId = communities["3D Printing Club"].id;
+
+  // Memberships — 6 members
+  const printClubMembers = [
+    'alice_tech',   // President
+    'alice',        // Vice President
+    'frank_science', // Treasurer
+    'carol_mixed',  // Secretary
+    'bob',          // Workshop Lead
+    'dave_outdoor', // General member
+  ];
+  await prisma.membership.createMany({
+    data: printClubMembers.map((username) => ({
+      userId: users[username].id,
+      communityId: printClubId,
+    })),
+    skipDuplicates: true,
+  });
+
+  // Owner
+  await prisma.communityOwner.create({
+    data: {
+      communityId: printClubId,
+      userId: users['alice_tech'].id,
+    },
+  });
+
+  // Club roles
+  const printRoles = await Promise.all([
+    prisma.clubRole.create({
+      data: {
+        communityId: printClubId,
+        name: 'President',
+        color: '#f97316', // orange
+        permissions: { create: [
+          { permission: 'canManageRoster' },
+          { permission: 'canManageEvents' },
+          { permission: 'canManageAnnouncements' },
+          { permission: 'canManageGallery' },
+        ]},
+      },
+    }),
+    prisma.clubRole.create({
+      data: {
+        communityId: printClubId,
+        name: 'Vice President',
+        color: '#0ea5e9', // sky blue
+        permissions: { create: [
+          { permission: 'canManageEvents' },
+          { permission: 'canManageAnnouncements' },
+        ]},
+      },
+    }),
+    prisma.clubRole.create({
+      data: {
+        communityId: printClubId,
+        name: 'Treasurer',
+        color: '#10b981', // emerald
+        permissions: { create: [
+          { permission: 'canManageAnnouncements' },
+        ]},
+      },
+    }),
+    prisma.clubRole.create({
+      data: {
+        communityId: printClubId,
+        name: 'Secretary',
+        color: '#8b5cf6', // violet
+        permissions: { create: [
+          { permission: 'canManageAnnouncements' },
+          { permission: 'canManageRoster' },
+        ]},
+      },
+    }),
+    prisma.clubRole.create({
+      data: {
+        communityId: printClubId,
+        name: 'Workshop Lead',
+        color: '#ef4444', // red
+        permissions: { create: [
+          { permission: 'canManageEvents' },
+          { permission: 'canManageGallery' },
+        ]},
+      },
+    }),
+  ]);
+
+  // Fetch memberships to assign roles
+  const printMemberships = await prisma.membership.findMany({
+    where: { communityId: printClubId },
+    include: { user: true },
+  });
+  const membershipByUsername = Object.fromEntries(
+    printMemberships.map((m) => [m.user.username, m])
+  );
+
+  const roleByName = Object.fromEntries(printRoles.map((r) => [r.name, r]));
+
+  await prisma.clubMemberRole.createMany({
+    data: [
+      { membershipId: membershipByUsername['alice_tech'].id, clubRoleId: roleByName['President'].id },
+      { membershipId: membershipByUsername['alice'].id, clubRoleId: roleByName['Vice President'].id },
+      { membershipId: membershipByUsername['frank_science'].id, clubRoleId: roleByName['Treasurer'].id },
+      { membershipId: membershipByUsername['carol_mixed'].id, clubRoleId: roleByName['Secretary'].id },
+      { membershipId: membershipByUsername['bob'].id, clubRoleId: roleByName['Workshop Lead'].id },
+    ],
+  });
+
+  // Announcements
+  await prisma.announcement.createMany({
+    data: [
+      {
+        communityId: printClubId,
+        createdById: users['alice_tech'].id,
+        title: 'New Prusa MK4S printers are here!',
+        description: 'We just received 3 brand-new Prusa MK4S printers for the lab. Come check them out during open hours this week. Huge upgrade from the old Ender 3s — faster prints, better quality, and auto bed leveling.',
+        category: 'news',
+        status: 'published',
+        pinned: true,
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      },
+      {
+        communityId: printClubId,
+        createdById: users['alice'].id,
+        title: 'Spring semester dues reminder',
+        description: 'Hey everyone! Just a reminder that $15 semester dues are due by end of this week. Dues cover filament costs, maintenance supplies, and our end-of-year showcase. Venmo @3DPrintClub-UF or pay in person at the next meeting.',
+        category: 'news',
+        status: 'published',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      },
+      {
+        communityId: printClubId,
+        createdById: users['alice_tech'].id,
+        title: 'Print queue rules update',
+        description: 'To keep things fair: max 1 active print per member at a time, 12-hour time limit per job, and please remove your prints within 2 hours of completion. Abandoned prints after 24h will be recycled.',
+        category: 'update',
+        status: 'published',
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
+      },
+      {
+        communityId: printClubId,
+        createdById: users['bob'].id,
+        title: 'Beginner CAD workshop recording posted',
+        description: 'If you missed last week\'s Fusion 360 intro workshop, the recording is now on our Google Drive. Link in the Discord #resources channel. Next workshop covers supports and overhangs.',
+        category: 'news',
+        status: 'published',
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+      },
+    ],
+  });
+
+  // Events
+  await prisma.event.createMany({
+    data: [
+      {
+        communityId: printClubId,
+        createdById: users['alice_tech'].id,
+        title: 'General Body Meeting',
+        description: 'Monthly GBM — updates on new equipment, upcoming competitions, and open Q&A. Pizza will be provided. Bring your laptop if you want to follow along with the live CAD demo.',
+        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days out
+        time: '6:30 PM',
+        locationName: 'MAE-A Room 303',
+        eventType: 'General',
+        status: 'published',
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        createdById: users['bob'].id,
+        title: 'Resin Printing Workshop',
+        description: 'Hands-on intro to SLA resin printing. We\'ll cover printer setup, slicing with Chitubox, post-processing (washing & curing), and safety. Gloves and goggles provided. Limited to 15 spots.',
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days out
+        time: '4:00 PM',
+        locationName: 'Innovation Hub Room 112',
+        eventType: 'Workshop',
+        capacity: 15,
+        status: 'published',
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        createdById: users['alice_tech'].id,
+        title: '3D Print Showcase & Competition',
+        description: 'End-of-month showcase! Bring your best print to compete in categories: Most Functional, Most Creative, and Best First Print. Judged by engineering faculty. Winners get free filament rolls.',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 2 weeks out
+        time: '5:00 PM',
+        locationName: 'Reitz Union Grand Ballroom',
+        eventType: 'Social',
+        status: 'published',
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        createdById: users['alice'].id,
+        title: 'Open Lab Hours',
+        description: 'Drop in to use the printers, get help with your projects, or just hang out. Board members will be available to help with slicer settings and troubleshooting.',
+        date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // tomorrow
+        time: '2:00 PM',
+        locationName: 'MAE-A Print Lab',
+        eventType: 'General',
+        status: 'published',
+        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
+  // Gallery images (placeholder images via picsum)
+  await prisma.galleryImage.createMany({
+    data: [
+      {
+        communityId: printClubId,
+        uploadedById: users['alice_tech'].id,
+        url: 'https://picsum.photos/seed/3dp-benchy/800/600',
+        caption: 'First benchy off the new Prusa MK4S — layer lines are basically invisible',
+        category: 'Projects',
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['bob'].id,
+        url: 'https://picsum.photos/seed/3dp-workshop1/800/600',
+        caption: 'Beginner CAD workshop — full house!',
+        category: 'Events',
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['alice'].id,
+        url: 'https://picsum.photos/seed/3dp-lab/800/600',
+        caption: 'The print lab setup with our 5 FDM printers and resin station',
+        category: 'General',
+        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['frank_science'].id,
+        url: 'https://picsum.photos/seed/3dp-gears/800/600',
+        caption: 'Planetary gear set printed in PETG — fully functional!',
+        category: 'Projects',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['carol_mixed'].id,
+        url: 'https://picsum.photos/seed/3dp-showcase/800/600',
+        caption: 'Last month\'s print showcase — so many cool entries',
+        category: 'Events',
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['alice_tech'].id,
+        url: 'https://picsum.photos/seed/3dp-lithophane/800/600',
+        caption: 'Custom lithophane night light — turned out amazing',
+        category: 'Projects',
+        createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['dave_outdoor'].id,
+        url: 'https://picsum.photos/seed/3dp-carabiner/800/600',
+        caption: 'Printed a carabiner clip for my hiking pack — surprisingly strong in nylon',
+        category: 'Projects',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        communityId: printClubId,
+        uploadedById: users['bob'].id,
+        url: 'https://picsum.photos/seed/3dp-resin/800/600',
+        caption: 'Resin printing demo day — the detail on these minis is insane',
+        category: 'Events',
+        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
+  console.log('Seeded 3D Printing Club mock data (members, roles, announcements, events, gallery)');
 }
 
 main()

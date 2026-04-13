@@ -1,107 +1,93 @@
 "use client";
 
-import { Calendar, MapPin, Users } from "lucide-react";
+import { CalendarDays, Clock, MapPin } from "lucide-react";
 import { type MeetingItem } from "./types";
-import VenueMapEmbed from "../shared/VenueMapEmbed";
-import { resolveEventCoordinates } from "../events/eventUtils";
 
 type MeetingWidgetProps = {
   heading?: string;
   meetings?: MeetingItem[];
 };
 
+function formatDate(raw: string): string {
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatTime(raw?: string): string | null {
+  if (!raw || raw === "00:00") return null;
+  // raw may be "HH:MM" or already formatted
+  const [h, m] = raw.split(":").map(Number);
+  if (isNaN(h)) return raw;
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 export default function MeetingWidget({
-  heading = "Upcoming General Body Meeting",
+  heading = "Upcoming Meeting",
   meetings,
 }: MeetingWidgetProps) {
-  if (!meetings || meetings.length === 0) {
-    return null;
-  }
+  if (!meetings || meetings.length === 0) return null;
 
   return (
     <div className="mt-5 border-t border-gray-200 pt-4">
-      <p className="text-base font-bold text-gray-900">{heading}</p>
-      <div className="mt-3 space-y-3">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+        {heading}
+      </p>
+
+      <div className="space-y-2.5">
         {meetings.map((meeting, idx) => {
-          const coordinates = resolveEventCoordinates(
-            meeting.locationName || "",
-            meeting.coordinates,
-          );
+          const dateStr = formatDate(meeting.date);
+          const timeStr = formatTime(meeting.time);
 
           return (
             <div
               key={meeting.id}
-              className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+              className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white"
             >
-              <div className="flex gap-0">
-                {/* Map thumbnail */}
-                <button
-                  type="button"
-                  className="relative h-auto w-[120px] shrink-0 cursor-pointer overflow-hidden border-r border-gray-100"
-                  onClick={() => {
-                    const query = coordinates
-                      ? `${coordinates.lat},${coordinates.lng}`
-                      : meeting.locationName;
-                    window.open(
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query || "")}`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }}
-                >
-                  <VenueMapEmbed
-                    locationName={meeting.locationName || ""}
-                    coordinates={coordinates}
-                    className="h-full w-full rounded-none border-0 shadow-none"
-                  />
-                </button>
+              {/* Orange accent top bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-orange-400" />
 
-                {/* Details */}
-                <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">
-                      GBM #{idx + 1}
-                    </p>
-                    <p className="mt-0.5 line-clamp-3 text-xs leading-snug text-gray-500">
-                      {meeting.title}
-                    </p>
+              <div className="p-3">
+                {/* GBM label + index chip */}
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-500">
+                    GBM #{idx + 1}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    RSVP&apos;d
+                  </span>
+                </div>
+
+                {/* Meeting title */}
+                <p className="text-sm font-semibold leading-snug text-gray-900 line-clamp-2">
+                  {meeting.title}
+                </p>
+
+                {/* Meta row */}
+                <div className="mt-2.5 space-y-1.5">
+                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    <span>{dateStr}</span>
+                    {timeStr && (
+                      <>
+                        <span className="text-gray-300">·</span>
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                        <span>{timeStr}</span>
+                      </>
+                    )}
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="space-y-0.5 text-[11px] text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-gray-400" />
-                        <span>{meeting.date}</span>
-                      </div>
-                      {meeting.locationName && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-orange-400" />
-                          <span className="text-orange-500">
-                            {meeting.locationName}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3 text-gray-400" />
-                        <span>200-250p</span>
-                      </div>
+                  {meeting.locationName && (
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-400" />
+                      <span className="font-medium text-orange-500 line-clamp-1">
+                        {meeting.locationName}
+                      </span>
                     </div>
-
-                    <span className="inline-flex items-center gap-1 rounded bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      RSVP&apos;d
-                      <svg
-                        className="h-3 w-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

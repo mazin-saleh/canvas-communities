@@ -15,7 +15,7 @@ type AnnouncementItemProps = {
 export default function AnnouncementItem({ announcement, canEdit, onEdit, onDelete, onTogglePin, pinned }: AnnouncementItemProps) {
   return (
     <article className="grid grid-cols-[56px_1fr] gap-3 border-b border-gray-200 pb-3 last:border-b-0 sm:grid-cols-[64px_1fr] sm:gap-4">
-      <div className="text-sm font-semibold leading-5 text-gray-600">
+      <div className="text-xs font-medium leading-5 text-gray-400">
         <p>{announcement.dayLabel}</p>
         <p>{announcement.timeLabel}</p>
       </div>
@@ -23,11 +23,11 @@ export default function AnnouncementItem({ announcement, canEdit, onEdit, onDele
       <div>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 sm:text-xl lg:text-2xl">
-              {pinned && <Pin className="mr-1 inline h-4 w-4 text-orange-500" />}
+            <h3 className="text-sm font-semibold leading-snug text-gray-900 sm:text-base">
+              {pinned && <Pin className="mr-1 inline h-3.5 w-3.5 text-orange-500" />}
               {announcement.title}
             </h3>
-            <p className="text-xs text-gray-500">{announcement.description}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{announcement.description}</p>
           </div>
 
           {canEdit && (

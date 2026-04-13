@@ -120,9 +120,14 @@ export async function leaveCommunity(userId: number, communityId: number) {
     return null;
   }
 
-  await prisma.membership.delete({
-    where: { userId_communityId: { userId, communityId } }
-  });
+  await prisma.$transaction([
+    prisma.clubMemberRole.deleteMany({
+      where: { membershipId: existing.id },
+    }),
+    prisma.membership.delete({
+      where: { userId_communityId: { userId, communityId } }
+    }),
+  ]);
 
   // Trigger ML recomputation (fire-and-forget)
   fetch(`${process.env.PYTHON_BACKEND_URL}/recommend/${userId}`, { method: 'POST' })

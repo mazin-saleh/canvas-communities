@@ -6,14 +6,26 @@ import EventsSidebar from "./EventsSidebar";
 import { type EventData } from "./eventsData";
 import { dateKey } from "./eventUtils";
 
+type EventDraft = {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  locationName: string;
+  eventType: string;
+  capacity: string;
+  status: string;
+};
+
 type EventsContainerProps = {
   events: EventData[];
   canEdit?: boolean;
+  onCreate?: (form: EventDraft) => Promise<void>;
   onEditEvent?: (id: string) => void;
   onDeleteEvent?: (id: string) => void;
 };
 
-export default function EventsContainer({ events, canEdit, onEditEvent, onDeleteEvent }: EventsContainerProps) {
+export default function EventsContainer({ events, canEdit, onCreate, onEditEvent, onDeleteEvent }: EventsContainerProps) {
   const [activeType, setActiveType] = useState<string>("All");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
@@ -52,7 +64,7 @@ export default function EventsContainer({ events, canEdit, onEditEvent, onDelete
           eventCountByType={eventCountByType}
         />
 
-        <EventList events={filteredEvents} canEdit={canEdit} onEdit={onEditEvent} onDelete={onDeleteEvent} />
+        <EventList events={filteredEvents} canEdit={canEdit} onCreate={onCreate} onEdit={onEditEvent} onDelete={onDeleteEvent} />
       </div>
     </section>
   );

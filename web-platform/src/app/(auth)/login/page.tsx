@@ -82,94 +82,103 @@ export default function Login() {
                     Enter your email and password to access your clubs
                   </p>
 
-                  <form onSubmit={handleLogin} className="mt-5">
+                  <form onSubmit={handleLogin} className="mt-6">
                     <div>
                       <label
                         htmlFor="login-email"
-                        className="mb-2 block text-base font-semibold text-white"
+                        className="mb-1.5 block text-sm font-medium text-white/90"
                       >
-                        Email
+                        Username
                       </label>
                       <Input
                         id="login-email"
-                        placeholder="Email"
+                        placeholder="e.g. alice"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        className="h-[44px] rounded-[5px] border border-[#c8c8c8] bg-white px-3 text-base text-slate-900 placeholder:text-[#636363] focus:ring-2 focus:ring-[#354a9c]/40"
+                        className="h-11 rounded-md border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/50 focus:bg-white/15 focus:ring-2 focus:ring-white/20 transition-colors"
                       />
                     </div>
 
                     <div className="mt-4">
                       <label
                         htmlFor="login-password"
-                        className="mb-2 block text-base font-semibold text-white"
+                        className="mb-1.5 block text-sm font-medium text-white/90"
                       >
                         Password
                       </label>
                       <Input
                         id="login-password"
                         type="password"
-                        placeholder="Password"
+                        placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-[44px] rounded-[5px] border border-[#c8c8c8] bg-white px-3 text-base text-slate-900 placeholder:text-[#636363] focus:ring-2 focus:ring-[#354a9c]/40"
+                        className="h-11 rounded-md border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/50 focus:bg-white/15 focus:ring-2 focus:ring-white/20 transition-colors"
                       />
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between text-base text-white/90">
-                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <div className="mt-4 flex items-center justify-between text-sm text-white/80">
+                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={rememberMe}
                           onChange={(e) => setRememberMe(e.target.checked)}
-                          className="size-4 rounded-[2px] border border-[#636363] accent-[#354a9c]"
+                          className="size-4 rounded border border-white/30 accent-[#354a9c]"
                         />
-                        <span>Remember Me</span>
+                        <span>Remember me</span>
                       </label>
                       <button
                         type="button"
-                        className="-mr-2 px-2 py-2 text-base underline underline-offset-2 hover:text-white"
+                        className="text-sm text-white/70 hover:text-white underline underline-offset-2 transition-colors"
                       >
-                        Forgot your password?
+                        Forgot password?
                       </button>
                     </div>
 
-                    {error && <p className="text-sm text-red-300">{error}</p>}
+                    {error && (
+                      <p className="mt-3 rounded-md bg-red-500/20 px-3 py-2 text-sm text-red-300 border border-red-500/30">
+                        {error}
+                      </p>
+                    )}
 
                     <Button
-                      className="mt-8 w-full h-[44px] rounded-[5px] bg-[#354a9c] hover:bg-[#2e448b] text-white text-base font-medium"
+                      className="mt-6 w-full h-11 rounded-md bg-[#354a9c] hover:bg-[#2e448b] active:bg-[#283d7a] text-white text-sm font-semibold transition-colors"
                       type="submit"
                       disabled={loading}
                     >
-                      {loading ? "Signing in..." : "Login"}
+                      {loading ? "Signing in…" : "Sign in"}
                     </Button>
 
-                    <div className="mt-4 flex items-center gap-2 py-0.5">
-                      <div className="h-px flex-1 bg-white/30" />
-                      <span className="text-[10px] text-white/90">
-                        Or Login With
-                      </span>
-                      <div className="h-px flex-1 bg-white/30" />
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-white/20" />
+                      <span className="text-xs text-white/50">or continue with</span>
+                      <div className="h-px flex-1 bg-white/20" />
                     </div>
 
-                    <div className="mt-3 grid grid-cols-1 gap-2">
+                    <button
+                      type="button"
+                      className="mt-3 w-full h-11 rounded-md border border-white/20 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
+                      Google
+                    </button>
+
+                    <div className="mt-5 text-center">
                       <button
                         type="button"
-                        className="h-[34px] rounded-[4px] border border-[#636363] bg-[#f0f0f0] text-[12px] text-black"
-                      >
-                        Google
-                      </button>
-                    </div>
-
-                    <div className="text-center pt-1">
-                      <Button
-                        variant="link"
-                        className="w-full px-2 py-2 text-base text-white/90 hover:text-white"
                         onClick={() => router.push("/signup")}
+                        className="text-sm text-white/70 hover:text-white transition-colors"
                       >
-                        Don&apos;t have an account? Register now.
-                      </Button>
+                        Don&apos;t have an account?{" "}
+                        <span className="font-semibold text-white underline underline-offset-2">
+                          Sign up
+                        </span>
+                      </button>
                     </div>
                   </form>
                 </div>

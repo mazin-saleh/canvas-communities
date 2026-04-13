@@ -52,50 +52,60 @@ export default function Signup() {
                 Enter your username and password to start discovering clubs.
               </p>
 
-              <form onSubmit={handleSignup} className="mt-5 space-y-3.5">
+              <form onSubmit={handleSignup} className="mt-6 space-y-4">
                 <div>
-                  <label className="text-[11px] font-normal text-white/85 block mb-1.5">
+                  <label className="mb-1.5 block text-sm font-medium text-white/90">
                     Username
                   </label>
                   <Input
+                    placeholder="Choose a username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="h-[32px] sm:h-[34px] rounded-[5px] border border-[#c8c8c8] bg-white px-2 text-[11px] text-slate-900 placeholder:text-[#636363] focus:ring-2 focus:ring-[#354a9c]/40"
+                    className="h-11 rounded-md border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/50 focus:bg-white/15 focus:ring-2 focus:ring-white/20 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-normal text-white/85 block mb-1.5">
+                  <label className="mb-1.5 block text-sm font-medium text-white/90">
                     Password
                   </label>
                   <Input
                     type="password"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-[32px] sm:h-[34px] rounded-[5px] border border-[#c8c8c8] bg-white px-2 text-[11px] text-slate-900 placeholder:text-[#636363] focus:ring-2 focus:ring-[#354a9c]/40"
+                    className="h-11 rounded-md border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/50 focus:bg-white/15 focus:ring-2 focus:ring-white/20 transition-colors"
                   />
                 </div>
 
-                {error && <p className="text-sm text-red-300">{error}</p>}
+                {error && (
+                  <p className="rounded-md bg-red-500/20 px-3 py-2 text-sm text-red-300 border border-red-500/30">
+                    {error}
+                  </p>
+                )}
 
-                <div className="pt-1.5 space-y-2.5">
+                <div className="pt-1 space-y-3">
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-[32px] sm:h-[34px] rounded-[5px] bg-[#354a9c] hover:bg-[#2e448b] text-white text-[11px] font-medium"
+                    className="w-full h-11 rounded-md bg-[#354a9c] hover:bg-[#2e448b] active:bg-[#283d7a] text-white text-sm font-semibold transition-colors"
                   >
-                    {loading ? "Creating..." : "Create account"}
+                    {loading ? "Creating account…" : "Create account"}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="w-full text-[11px] text-white/90 hover:text-white"
-                    onClick={() => router.push("/login")}
-                  >
-                    Already have an account?
-                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => router.push("/login")}
+                      className="text-sm text-white/70 hover:text-white transition-colors"
+                    >
+                      Already have an account?{" "}
+                      <span className="font-semibold text-white underline underline-offset-2">
+                        Sign in
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

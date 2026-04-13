@@ -23,6 +23,13 @@ type ClubPermissionSet = {
   canBlacklistUsers: boolean;
 };
 
+type CommunityListResponse = {
+  items: Community[];
+  total: number;
+  hasMore: boolean;
+  nextOffset: number;
+};
+
 type UserAccessPayload = {
   user: {
     id: number;
@@ -211,8 +218,19 @@ export const api = {
       request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {
-    list: (): Promise<Community[]> =>
-      request("/api/community/list", { method: "GET" }),
+    list: (params?: {
+      q?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<Community[] | CommunityListResponse> => {
+      const query = new URLSearchParams();
+      if (params?.q) query.set("q", params.q);
+      if (params?.limit != null) query.set("limit", String(params.limit));
+      if (params?.offset != null) query.set("offset", String(params.offset));
+
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+      return request(`/api/community/list${suffix}`, { method: "GET" });
+    },
     create: (name: string): Promise<Community> =>
       request("/api/community/create", {
         method: "POST",

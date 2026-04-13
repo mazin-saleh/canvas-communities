@@ -34,6 +34,7 @@ export default function DiscoveryPage() {
   const currentUserId = hydrated && user ? Number(user.id) : null;
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [topPicksCollapsed, setTopPicksCollapsed] = useState(false);
 
   const [clubs, setClubs] = useState<any[]>([]);
   const [exploreClubs, setExploreClubs] = useState<any[]>([]);
@@ -78,7 +79,7 @@ export default function DiscoveryPage() {
             location: (c.nextMeeting && c.nextMeeting.location) || "Campus",
           },
           logoSrc: c.avatarUrl || "/avatars/placeholder.png",
-          bannerSrc: c.bannerUrl || c.banner || "/gator-hero.png",
+          bannerSrc: c.bannerUrl || c.banner || undefined,
           score: c.score,
           contentScore: c.contentScore,
           collabScore: c.collabScore,
@@ -101,7 +102,7 @@ export default function DiscoveryPage() {
             location: "Campus",
           },
           logoSrc: c.avatarUrl || "/avatars/placeholder.png",
-          bannerSrc: c.bannerUrl || c.banner || "/gator-hero.png",
+          bannerSrc: c.bannerUrl || c.banner || undefined,
           score: c.score,
           contentScore: c.contentScore,
           collabScore: c.collabScore,
@@ -166,11 +167,25 @@ export default function DiscoveryPage() {
     <div className="relative min-h-full bg-[url('/background.png')] bg-cover bg-center">
       <div className="absolute inset-0 bg-white/90" />
 
-      <div className="relative">
+      <div
+        className={`relative ${
+          topPicksCollapsed ? "lg:pr-14" : "lg:pr-72 xl:pr-80"
+        }`}
+      >
+        {/* Top picks wall — hidden below lg */}
+        <aside className="hidden lg:flex absolute inset-y-0 right-0 justify-end">
+          <div className="sticky top-0 h-screen">
+            <EventsYouMightLike
+              collapsed={topPicksCollapsed}
+              onCollapsedChange={setTopPicksCollapsed}
+            />
+          </div>
+        </aside>
+
         {/* Search + Chips — sticky header */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="px-4 py-3 sm:px-6 lg:px-8 space-y-3">
-            <div className="relative max-w-xl">
+            <div className="relative w-full">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 type="search"
@@ -204,61 +219,51 @@ export default function DiscoveryPage() {
         </div>
 
         {/* Main content area */}
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex gap-8 items-start">
-            {/* Carousel rows */}
-            <div className="flex-1 min-w-0 space-y-8">
-              {loading ? (
-                <p className="text-sm text-slate-500 py-8">Loading recommendations…</p>
-              ) : error ? (
-                <p className="text-sm text-red-500 py-8">Error: {error}</p>
-              ) : (
-                <>
+        <div className="py-6 pl-4 pr-0 sm:pl-6 sm:pr-0 lg:pl-8 lg:pr-0">
+          <div className="space-y-8">
+            {loading ? (
+              <p className="text-sm text-slate-500 py-8">Loading recommendations…</p>
+            ) : error ? (
+              <p className="text-sm text-red-500 py-8">Error: {error}</p>
+            ) : (
+              <>
+                <DiscoveryCarouselRow
+                  title={
+                    <>
+                      For <span className="text-orange-500">You</span>
+                    </>
+                  }
+                  clubs={forYouClubs}
+                  rowId="for-you"
+                />
+
+                {filteredExploreClubs.length > 0 && (
                   <DiscoveryCarouselRow
                     title={
                       <>
-                        For <span className="text-orange-500">You</span>
+                        You might <span className="text-orange-500">also like</span>
                       </>
                     }
-                    clubs={forYouClubs}
-                    rowId="for-you"
+                    clubs={filteredExploreClubs}
+                    rowId="you-might-also-like"
                   />
+                )}
 
-                  {filteredExploreClubs.length > 0 && (
-                    <DiscoveryCarouselRow
-                      title={
-                        <>
-                          You might <span className="text-orange-500">also like</span>
-                        </>
-                      }
-                      clubs={filteredExploreClubs}
-                      rowId="you-might-also-like"
-                    />
-                  )}
-
-                  {interestRows.map((row) => (
-                    <DiscoveryCarouselRow
-                      key={row.interest}
-                      title={
-                        <>
-                          Since you liked{" "}
-                          <span className="text-orange-500">{row.interest}</span>
-                        </>
-                      }
-                      clubs={row.clubs}
-                      rowId={row.interest.toLowerCase().replace(/\s+/g, "-")}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
-
-            {/* Events sidebar — hidden below lg */}
-            <aside className="hidden lg:block w-72 xl:w-80 shrink-0">
-              <div className="sticky top-28">
-                <EventsYouMightLike />
-              </div>
-            </aside>
+                {interestRows.map((row) => (
+                  <DiscoveryCarouselRow
+                    key={row.interest}
+                    title={
+                      <>
+                        Since you liked{" "}
+                        <span className="text-orange-500">{row.interest}</span>
+                      </>
+                    }
+                    clubs={row.clubs}
+                    rowId={row.interest.toLowerCase().replace(/\s+/g, "-")}
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>

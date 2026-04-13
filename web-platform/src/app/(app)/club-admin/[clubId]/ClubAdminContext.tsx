@@ -32,6 +32,7 @@ type ClubData = {
   name: string;
   description: string;
   avatarUrl: string | null;
+  bannerUrl: string | null;
   tags: { id: number; name: string }[];
   members: MemberWithRoles[];
   owner: { userId: number } | null;
@@ -59,7 +60,7 @@ type ClubAdminContextValue = {
     assignRole: (roleId: number, membershipId: number) => Promise<void>;
     unassignRole: (roleId: number, membershipId: number) => Promise<void>;
     kickMember: (membershipId: number) => Promise<void>;
-    updateClub: (data: { name?: string; description?: string; avatarUrl?: string | null }) => Promise<ClubData>;
+    updateClub: (data: { name?: string; description?: string; avatarUrl?: string | null; bannerUrl?: string | null; tags?: string[] }) => Promise<ClubData>;
     reloadClub: () => Promise<void>;
   };
 };

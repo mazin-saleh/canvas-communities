@@ -14,15 +14,10 @@ export default function ClubGeneralInfoPage() {
 
   const initialValue: ClubIdentityDraft = {
     clubName: club.name,
-    bannerSrc: "/background.png",
     clubDesc: club.description,
     clubTags: club.tags.map(t => t.name),
-    socialLinks: [
-      { platform: "Website", href: "" },
-      { platform: "Instagram", href: "" },
-      { platform: "LinkedIn", href: "" },
-      { platform: "Discord", href: "" },
-    ],
+    avatarUrl: club.avatarUrl || "",
+    bannerUrl: club.bannerUrl || "",
   };
 
   return (
@@ -33,6 +28,9 @@ export default function ClubGeneralInfoPage() {
         await actions.updateClub({
           name: draft.clubName,
           description: draft.clubDesc,
+          tags: draft.clubTags,
+          avatarUrl: draft.avatarUrl || null,
+          bannerUrl: draft.bannerUrl || null,
         });
       }}
     />

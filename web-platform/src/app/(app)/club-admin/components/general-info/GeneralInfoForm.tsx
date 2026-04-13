@@ -1,30 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, CircleAlert, Upload } from "lucide-react";
+import { CheckCircle2, CircleAlert } from "lucide-react";
 import TagManager from "./TagManager";
 
 const DESCRIPTION_LIMIT = 280;
 const CLUB_NAME_LIMIT = 70;
 
-type SocialPlatform = "Website" | "Instagram" | "LinkedIn" | "Discord";
-
-type SocialLinkField = {
-  platform: SocialPlatform;
-  href: string;
-};
-
 export type ClubIdentityDraft = {
   clubName: string;
-  bannerSrc: string;
   clubDesc: string;
   clubTags: string[];
-  socialLinks: SocialLinkField[];
+  avatarUrl: string;
+  bannerUrl: string;
 };
 
 type GeneralInfoFormProps = {
@@ -36,14 +29,19 @@ type GeneralInfoFormProps = {
 type ValidationErrors = {
   clubName?: string;
   clubDesc?: string;
-  socialLinks: Partial<Record<SocialPlatform, string>>;
+  avatarUrl?: string;
+  bannerUrl?: string;
 };
 
-function normalizeUrl(rawValue: string): string {
-  const value = rawValue.trim();
-  if (!value) return "";
-  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-  return new URL(withProtocol).toString();
+function isValidUrl(value: string): boolean {
+  if (!value.trim()) return true; // empty is fine
+  try {
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    new URL(withProtocol);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function serializeDraft(draft: ClubIdentityDraft): string {
@@ -55,33 +53,20 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
   const [savedSnapshot, setSavedSnapshot] = useState<ClubIdentityDraft>(initialValue);
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const uploadedBannerRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (uploadedBannerRef.current) URL.revokeObjectURL(uploadedBannerRef.current);
-    };
-  }, []);
 
   const errors = useMemo<ValidationErrors>(() => {
-    const e: ValidationErrors = { socialLinks: {} };
+    const e: ValidationErrors = {};
     if (!draft.clubName.trim()) e.clubName = "Club name is required.";
     else if (draft.clubName.trim().length > CLUB_NAME_LIMIT) e.clubName = `Max ${CLUB_NAME_LIMIT} characters.`;
     if (!draft.clubDesc.trim()) e.clubDesc = "Description is required.";
     else if (draft.clubDesc.length > DESCRIPTION_LIMIT) e.clubDesc = `Max ${DESCRIPTION_LIMIT} characters.`;
-    draft.socialLinks.forEach((sl) => {
-      if (!sl.href.trim()) return;
-      try { normalizeUrl(sl.href); } catch { e.socialLinks[sl.platform] = "Invalid URL."; }
-    });
+    if (draft.avatarUrl.trim() && !isValidUrl(draft.avatarUrl)) e.avatarUrl = "Invalid URL.";
+    if (draft.bannerUrl.trim() && !isValidUrl(draft.bannerUrl)) e.bannerUrl = "Invalid URL.";
     return e;
   }, [draft]);
 
-  const hasErrors = Boolean(errors.clubName) || Boolean(errors.clubDesc) || Object.values(errors.socialLinks).some(Boolean);
+  const hasErrors = Boolean(errors.clubName) || Boolean(errors.clubDesc) || Boolean(errors.avatarUrl) || Boolean(errors.bannerUrl);
   const isDirty = serializeDraft(draft) !== serializeDraft(savedSnapshot);
-
-  const updateSocialLink = (platform: SocialPlatform, href: string) => {
-    setDraft((c) => ({ ...c, socialLinks: c.socialLinks.map((sl) => sl.platform === platform ? { ...sl, href } : sl) }));
-  };
 
   const addTag = (tag: string): { ok: boolean; message?: string } => {
     const t = tag.trim();
@@ -96,16 +81,6 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
     setDraft((c) => ({ ...c, clubTags: c.clubTags.filter((x) => x !== tag) }));
   };
 
-  const handleBannerUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    const objectUrl = URL.createObjectURL(file);
-    if (uploadedBannerRef.current) URL.revokeObjectURL(uploadedBannerRef.current);
-    uploadedBannerRef.current = objectUrl;
-    setDraft((c) => ({ ...c, bannerSrc: objectUrl }));
-    event.currentTarget.value = "";
-  };
-
   const handleSave = async () => {
     if (saving || !isDirty || hasErrors) return;
     setSaving(true);
@@ -114,7 +89,8 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
       clubName: draft.clubName.trim(),
       clubDesc: draft.clubDesc.trim(),
       clubTags: draft.clubTags.map((t) => t.trim()).filter(Boolean),
-      socialLinks: draft.socialLinks.map((sl) => ({ ...sl, href: sl.href.trim() ? normalizeUrl(sl.href) : "" })),
+      avatarUrl: draft.avatarUrl.trim(),
+      bannerUrl: draft.bannerUrl.trim(),
     };
 
     if (onSave) {
@@ -142,24 +118,66 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
 
   return (
     <div className="pb-20">
-      {/* Section: Banner */}
-      <section className="mb-8">
-        <h3 className="mb-1 text-sm font-semibold text-stone-800">Club Banner</h3>
-        <p className="mb-3 text-xs text-stone-500">Use a wide image. Displayed on the public club page.</p>
-        <div className="relative h-32 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 sm:h-40">
-          <Image
-            src={draft.bannerSrc || "/background.png"}
-            alt={`${draft.clubName || "Club"} banner`}
-            fill
-            sizes="(max-width: 640px) 100vw, 720px"
-            className="object-cover"
-          />
+      {/* Section: Club Images */}
+      <section className="mb-8 space-y-4">
+        <h3 className="text-sm font-semibold text-stone-800">Club Images</h3>
+
+        <div>
+          <Label htmlFor="avatar-url" className="mb-1 block text-xs font-medium text-stone-600">Logo URL</Label>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-stone-200 bg-stone-100">
+              {draft.avatarUrl.trim() ? (
+                <Image
+                  src={draft.avatarUrl.trim()}
+                  alt="Club logo preview"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-stone-400">
+                  {draft.clubName.slice(0, 2).toUpperCase() || "CC"}
+                </div>
+              )}
+            </div>
+            <Input
+              id="avatar-url"
+              value={draft.avatarUrl}
+              onChange={(e) => setDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
+              placeholder="https://example.com/logo.png"
+              disabled={readOnly}
+              className={[inputStyle, "flex-1", errors.avatarUrl ? "border-red-400" : ""].join(" ")}
+            />
+          </div>
+          {errors.avatarUrl && <p className="mt-0.5 text-xs text-red-600">{errors.avatarUrl}</p>}
+          <p className="mt-1 text-xs text-stone-400">Paste a direct link to your club&apos;s logo image.</p>
         </div>
-        <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50">
-          <Upload className="h-3.5 w-3.5" />
-          Upload Banner
-          <input type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
-        </label>
+
+        <div>
+          <Label htmlFor="banner-url" className="mb-1 block text-xs font-medium text-stone-600">Banner URL</Label>
+          {draft.bannerUrl.trim() && (
+            <div className="mb-2 relative h-24 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 sm:h-32">
+              <Image
+                src={draft.bannerUrl.trim()}
+                alt="Club banner preview"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          )}
+          <Input
+            id="banner-url"
+            value={draft.bannerUrl}
+            onChange={(e) => setDraft((c) => ({ ...c, bannerUrl: e.target.value }))}
+            placeholder="https://example.com/banner.png"
+            disabled={readOnly}
+            className={[inputStyle, errors.bannerUrl ? "border-red-400" : ""].join(" ")}
+          />
+          {errors.bannerUrl && <p className="mt-0.5 text-xs text-red-600">{errors.bannerUrl}</p>}
+          <p className="mt-1 text-xs text-stone-400">Paste a direct link to a wide banner image for your club page.</p>
+        </div>
       </section>
 
       {/* Section: Name & Description */}
@@ -203,29 +221,6 @@ export default function GeneralInfoForm({ initialValue, readOnly = false, onSave
         <h3 className="mb-1 text-sm font-semibold text-stone-800">Categories</h3>
         <p className="mb-2 text-xs text-stone-500">Tags help students discover your club.</p>
         <TagManager tags={draft.clubTags} onAddTag={addTag} onRemoveTag={removeTag} />
-      </section>
-
-      {/* Section: Social Links */}
-      <section className="mb-8">
-        <h3 className="mb-3 text-sm font-semibold text-stone-800">Social Links</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {draft.socialLinks.map((sl) => (
-            <div key={sl.platform}>
-              <Label htmlFor={`social-${sl.platform.toLowerCase()}`} className="mb-1 block text-xs font-medium text-stone-600">
-                {sl.platform}
-              </Label>
-              <Input
-                id={`social-${sl.platform.toLowerCase()}`}
-                value={sl.href}
-                onChange={(e) => updateSocialLink(sl.platform, e.target.value)}
-                placeholder="example.com/yourclub"
-                disabled={readOnly}
-                className={[inputStyle, errors.socialLinks[sl.platform] ? "border-red-400" : ""].join(" ")}
-              />
-              {errors.socialLinks[sl.platform] && <p className="mt-0.5 text-xs text-red-600">{errors.socialLinks[sl.platform]}</p>}
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Sticky save bar */}

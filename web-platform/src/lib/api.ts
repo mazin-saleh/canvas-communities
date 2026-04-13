@@ -211,6 +211,8 @@ export const api = {
       request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {
+    list: (): Promise<Community[]> =>
+      request("/api/community/list", { method: "GET" }),
     create: (name: string): Promise<Community> =>
       request("/api/community/create", {
         method: "POST",
@@ -229,7 +231,7 @@ export const api = {
       }),
     getById: (id: number): Promise<Community> =>
       request(`/api/community/get?id=${id}`, { method: "GET" }),
-    update: (communityId: number, data: { name?: string; description?: string; avatarUrl?: string | null }) =>
+    update: (communityId: number, data: { name?: string; description?: string; avatarUrl?: string | null; bannerUrl?: string | null; tags?: string[] }) =>
       request(`/api/community/${communityId}`, {
         method: "PATCH",
         body: JSON.stringify(data),

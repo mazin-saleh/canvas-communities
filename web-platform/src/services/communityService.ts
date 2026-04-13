@@ -22,6 +22,47 @@ export async function addCommunityTag(communityId: number, tagName: string) {
   });
 }
 
+export async function setCommunityTags(communityId: number, tagNames: string[]) {
+  // Disconnect all existing tags, then connect/create the desired set
+  return prisma.community.update({
+    where: { id: communityId },
+    data: {
+      tags: {
+        set: [], // disconnect all
+        connectOrCreate: tagNames.map((name) => ({
+          where: { name },
+          create: { name },
+        })),
+      },
+    },
+    include: {
+      tags: true,
+      members: {
+        include: {
+          user: { select: { id: true, username: true } },
+          assignedRoles: {
+            include: {
+              clubRole: {
+                include: { permissions: true },
+              },
+            },
+          },
+        },
+      },
+      owner: true,
+    },
+  });
+}
+
+export async function listAllCommunities() {
+  return prisma.community.findMany({
+    include: {
+      tags: true,
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function getCommunityById(id: number) {
   return prisma.community.findUnique({
     where: { id },
@@ -46,7 +87,7 @@ export async function getCommunityById(id: number) {
 
 export async function updateCommunity(
   id: number,
-  data: Partial<{ name: string; description: string; avatarUrl: string | null }>
+  data: Partial<{ name: string; description: string; avatarUrl: string | null; bannerUrl: string | null }>
 ) {
   return prisma.community.update({
     where: { id },

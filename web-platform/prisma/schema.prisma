@@ -35,6 +35,7 @@ model Community {
   name            String           @unique
   description     String           @default("")
   avatarUrl       String?
+  bannerUrl       String?
   tags            Tag[]            @relation("CommunityTags")
   members         Membership[]
   interactions    Interaction[]

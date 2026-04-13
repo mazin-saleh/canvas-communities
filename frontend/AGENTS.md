@@ -45,7 +45,7 @@ Agent behavior for current state:
 
 - If a rule is not uniquely frontend-specific, move it to root AGENTS.md.
 
-## 4) Context Update Protocol For This Folder
+## 4) Repeat-Issue Logging Protocol For This Folder
 
 Update this file whenever frontend-specific context changes:
 
@@ -56,11 +56,13 @@ Update this file whenever frontend-specific context changes:
 When updating:
 
 1. Edit relevant sections.
-2. Add a new entry at top of Context Update Log.
+2. Add a new entry at top of the log only for recurring or likely-recurring issues.
 3. If change impacts other master folders, add a handoff note to root AGENTS.md.
 
-## 5) Context Update Log
+## 5) Repeat-Issue Log
+
+Purpose: Capture only recurring or likely-recurring frontend-folder issues and prevention guidance.
 
 Add newest entries at top.
 
-- 2026-03-23 | Initial folder guide | Created folder-scoped AGENTS.md for frontend scaffold state.
+- None recorded yet.

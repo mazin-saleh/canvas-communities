@@ -186,3 +186,16 @@ curl -X POST http://localhost:8001/recommend/all
 - ML Engine: http://localhost:8001/docs
 
 **Note:** For local dev, ensure `DATABASE_URL` in root `.env` points to your local PostgreSQL instance.
+
+
+
+
+
+
+
+
+
+
+
+
+

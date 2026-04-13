@@ -35,7 +35,7 @@ services:
       - ./web-platform:/app
       - /app/node_modules
       - /app/.next
-    command: sh start.sh
+    command: ["sh", "-c", "tr -d '\\015' < start.sh > /tmp/start.sh; chmod +x /tmp/start.sh; sh /tmp/start.sh"]
 
   ml-engine:
     container_name: gatorcommunities-ml

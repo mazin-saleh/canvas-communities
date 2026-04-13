@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { CalendarDays, MapPin, Clock } from "lucide-react";
+import { CalendarDays, MapPin, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { DiscoveryClub } from "@/mocks/discovery";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -17,10 +17,62 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
   const { refresh } = useRole();
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
+  const tagRailRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [hiddenRightCount, setHiddenRightCount] = useState(0);
 
   const hasNextMeeting =
     club.nextMeeting &&
     (club.nextMeeting.title || club.nextMeeting.datetime || club.nextMeeting.location);
+
+  const updateTagRailState = useCallback(() => {
+    const rail = tagRailRef.current;
+    if (!rail) return;
+
+    const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    const scrollLeft = rail.scrollLeft;
+    setCanScrollLeft(scrollLeft > 1);
+    setCanScrollRight(scrollLeft < maxScrollLeft - 1);
+
+    const rightEdge = scrollLeft + rail.clientWidth;
+    const chips = Array.from(
+      rail.querySelectorAll<HTMLElement>('[data-tag-chip="true"]'),
+    );
+    const hidden = chips.filter((chip) => chip.offsetLeft + chip.offsetWidth > rightEdge + 1).length;
+    setHiddenRightCount(hidden);
+  }, []);
+
+  useEffect(() => {
+    updateTagRailState();
+  }, [club.tags, updateTagRailState]);
+
+  useEffect(() => {
+    const rail = tagRailRef.current;
+    if (!rail) return;
+
+    const handleScroll = () => updateTagRailState();
+    rail.addEventListener("scroll", handleScroll);
+
+    const resizeObserver = new ResizeObserver(() => updateTagRailState());
+    resizeObserver.observe(rail);
+
+    return () => {
+      rail.removeEventListener("scroll", handleScroll);
+      resizeObserver.disconnect();
+    };
+  }, [updateTagRailState]);
+
+  function scrollTags(direction: "left" | "right", e: React.MouseEvent) {
+    e.stopPropagation();
+    const rail = tagRailRef.current;
+    if (!rail) return;
+
+    rail.scrollBy({
+      left: direction === "right" ? 120 : -120,
+      behavior: "smooth",
+    });
+  }
 
   // Fire-and-forget interaction logger — feeds the ML collaborative filter
   function track(type: "view" | "click" | "join") {
@@ -130,19 +182,48 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
 
         {/* Bottom bar — tags + buttons */}
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-2">
-          {/* Tags — inline scrollable with edge fades */}
-          <div className="relative min-w-0">
+          {/* Tags — desktop-friendly horizontal rail with subtle controls */}
+          <div className="group relative min-w-0 pr-7">
             <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10" />
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1">
-              {club.tags.slice(0, 5).map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
-                  >
-                    {tag}
-                  </span>
+            <div className="pointer-events-none absolute right-7 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10" />
+
+            <div ref={tagRailRef} className="flex gap-1.5 overflow-x-auto no-scrollbar px-1">
+              {club.tags.map((tag) => (
+                <span
+                  key={tag}
+                  data-tag-chip="true"
+                  className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
+                >
+                  {tag}
+                </span>
               ))}
+            </div>
+
+            {hiddenRightCount > 0 && (
+              <span className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
+                +{hiddenRightCount}
+              </span>
+            )}
+
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+              <button
+                type="button"
+                aria-label="Scroll tags left"
+                disabled={!canScrollLeft}
+                onClick={(e) => scrollTags("left", e)}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                aria-label="Scroll tags right"
+                disabled={!canScrollRight}
+                onClick={(e) => scrollTags("right", e)}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm disabled:opacity-30"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
             </div>
           </div>
 

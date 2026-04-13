@@ -40,8 +40,8 @@ export default function AnnouncementsPanel({ announcements, canEdit, onCreate, o
   }, [activeFilter, announcements]);
 
   return (
-    <div className="mt-2 rounded-lg border border-gray-300 bg-[#f7f7f7] p-4">
-      <div className="mb-3 flex items-center gap-2 border-b border-gray-200 pb-2 text-xs font-semibold text-gray-500 sm:gap-4 sm:text-sm">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex shrink-0 items-center gap-2 border-b border-gray-200 pb-2 text-xs font-semibold text-gray-500 sm:gap-4 sm:text-sm">
         <button
           type="button"
           onClick={() => setActiveFilter("all")}
@@ -65,7 +65,7 @@ export default function AnnouncementsPanel({ announcements, canEdit, onCreate, o
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="min-h-0 flex-1 space-y-4 pr-1">
         {canEdit && onCreate && (
           <InlineAnnouncementForm onSubmit={onCreate} />
         )}

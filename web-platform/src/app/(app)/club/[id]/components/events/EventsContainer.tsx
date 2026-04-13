@@ -52,8 +52,8 @@ export default function EventsContainer({ events, canEdit, onCreate, onEditEvent
   }, [activeType, events, selectedDate]);
 
   return (
-    <section className="mt-2 rounded-xl border border-gray-300 bg-[#f7f7f7] p-3">
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <section className="flex h-full min-h-0 flex-col gap-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
         <EventsSidebar
           events={events}
           selectedDate={selectedDate}

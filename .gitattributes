@@ -1,0 +1,9 @@
+# Normalize line endings across platforms.
+* text=auto
+
+# Shell scripts must stay LF for Linux/macOS containers.
+*.sh text eol=lf
+
+# Keep env files LF to avoid parser issues in containers.
+*.env text eol=lf
+*.env.* text eol=lf

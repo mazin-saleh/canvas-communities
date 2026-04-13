@@ -16,6 +16,26 @@ type BrowseClub = {
   tags: { id: number; name: string }[];
 };
 
+type BrowseListResponse = {
+  items?: BrowseClub[];
+};
+
+function normalizeBrowseClubs(payload: unknown): BrowseClub[] {
+  if (Array.isArray(payload)) {
+    return payload as BrowseClub[];
+  }
+
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    Array.isArray((payload as BrowseListResponse).items)
+  ) {
+    return (payload as BrowseListResponse).items as BrowseClub[];
+  }
+
+  return [];
+}
+
 export default function BrowsePage() {
   const [clubs, setClubs] = useState<BrowseClub[]>([]);
   const [query, setQuery] = useState("");
@@ -26,7 +46,9 @@ export default function BrowsePage() {
     api.community
       .list()
       .then((data) => {
-        if (mounted) setClubs(data as unknown as BrowseClub[]);
+        if (mounted) {
+          setClubs(normalizeBrowseClubs(data));
+        }
       })
       .catch((err) => console.error("Failed to load clubs:", err))
       .finally(() => {

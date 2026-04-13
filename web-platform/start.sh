@@ -2,7 +2,20 @@
 set -e
 
 echo "Applying safe user role migration..."
-npx prisma db execute --file prisma/migrations/20260331153000_safe_user_role_columns/migration.sql
+set +e
+MIGRATION_OUTPUT=$(npx prisma db execute --file prisma/migrations/20260331153000_safe_user_role_columns/migration.sql 2>&1)
+MIGRATION_EXIT=$?
+set -e
+echo "$MIGRATION_OUTPUT"
+
+if [ "$MIGRATION_EXIT" -ne 0 ]; then
+	if echo "$MIGRATION_OUTPUT" | grep -q "P1014"; then
+		echo "User table not found yet. Skipping safe user role migration until schema exists."
+	else
+		echo "Safe user role migration failed for a non-recoverable reason."
+		exit "$MIGRATION_EXIT"
+	fi
+fi
 
 echo "Running Prisma schema sync..."
 set +e

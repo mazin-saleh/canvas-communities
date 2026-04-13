@@ -208,13 +208,13 @@ export const api = {
       request("/api/tags", { method: "GET" }),
   },
   activity: {
-    getFeed: (userId: number): Promise<any[]> =>
+    getFeed: (userId: number) =>
       request("/api/activity/feed", {
         method: "GET",
         headers: { "x-user-id": String(userId) },
       }),
 
-    getUpcoming: (): Promise<any[]> =>
+    getUpcoming: () =>
       request("/api/activity/upcoming", { method: "GET" }),
   },
   community: {

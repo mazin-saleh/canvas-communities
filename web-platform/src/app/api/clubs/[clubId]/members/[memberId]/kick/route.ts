@@ -1,4 +1,4 @@
-// @ts-nocheck — depends on ClubAdmin/AuditLog models not yet in schema
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import {
   ForbiddenError,

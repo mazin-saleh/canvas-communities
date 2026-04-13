@@ -1,4 +1,4 @@
-// @ts-nocheck — depends on AdminRequest/ClubAdmin/AuditLog models not yet in schema
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AdminRequestStatus, PlatformRole } from "@/lib/access-enums";

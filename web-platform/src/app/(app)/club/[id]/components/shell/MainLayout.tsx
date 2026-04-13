@@ -41,7 +41,7 @@ export default function MainLayout({
 }: MainLayoutProps) {
   return (
     <div
-      className="min-h-full bg-[var(--club-page-bg)]"
+      className="min-h-screen bg-[var(--club-page-bg)] lg:h-full lg:min-h-0 lg:overflow-hidden"
       style={
         {
           "--club-brand-orange": clubTheme.colors.brandOrange,
@@ -52,7 +52,7 @@ export default function MainLayout({
         } as React.CSSProperties
       }
     >
-      <div className="overflow-hidden bg-[var(--club-page-bg)]">
+      <div className="bg-[var(--club-page-bg)] lg:flex lg:h-full lg:min-h-0 lg:flex-col">
         <div className="relative">
           <PageHeader
             clubName={clubName}
@@ -67,22 +67,24 @@ export default function MainLayout({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <ClubSidebar
-            logoSrc={logoSrc}
-            clubName={clubName}
-            clubDesc={clubDesc}
-            clubTags={clubTags}
-            joined={joined}
-            joining={joining}
-            leaving={leaving}
-            onJoin={onJoin}
-            onLeave={onLeave}
-            socialLinks={socialLinks}
-            upcomingMeetings={upcomingMeetings}
-          />
+        <div className="grid min-h-[calc(100dvh-140px)] grid-cols-1 items-stretch lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
+          <div className="relative z-20 h-full lg:min-h-0 lg:border-r lg:border-gray-200">
+            <ClubSidebar
+              logoSrc={logoSrc}
+              clubName={clubName}
+              clubDesc={clubDesc}
+              clubTags={clubTags}
+              joined={joined}
+              joining={joining}
+              leaving={leaving}
+              onJoin={onJoin}
+              onLeave={onLeave}
+              socialLinks={socialLinks}
+              upcomingMeetings={upcomingMeetings}
+            />
+          </div>
 
-          <section className="min-w-0 bg-[var(--club-page-bg)] p-3 sm:p-4">
+          <section className="min-w-0 bg-[var(--club-page-bg)] p-3 sm:p-4 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-hidden">
             {children}
           </section>
         </div>

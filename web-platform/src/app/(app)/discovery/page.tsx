@@ -5,7 +5,6 @@ import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import Input from "@/components/ui/input";
 import DiscoveryCarouselRow from "@/components/discovery/DiscoveryCarouselRow";
-import EventsYouMightLike from "@/components/discovery/EventsYouMightLike";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -34,8 +33,6 @@ export default function DiscoveryPage() {
   const currentUserId = hydrated && user ? Number(user.id) : null;
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [topPicksCollapsed, setTopPicksCollapsed] = useState(false);
-
   const [clubs, setClubs] = useState<any[]>([]);
   const [exploreClubs, setExploreClubs] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -216,21 +213,7 @@ export default function DiscoveryPage() {
     <div className="relative min-h-full bg-[url('/background.png')] bg-cover bg-center">
       <div className="absolute inset-0 bg-white/90" />
 
-      <div
-        className={`relative ${
-          topPicksCollapsed ? "lg:pr-14" : "lg:pr-72 xl:pr-80"
-        }`}
-      >
-        {/* Top picks wall — hidden below lg */}
-        <aside className="hidden lg:flex absolute inset-y-0 right-0 justify-end">
-          <div className="sticky top-0 h-screen">
-            <EventsYouMightLike
-              collapsed={topPicksCollapsed}
-              onCollapsedChange={setTopPicksCollapsed}
-            />
-          </div>
-        </aside>
-
+      <div className="relative">
         {/* Search + Chips — sticky header */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="px-4 py-3 sm:px-6 lg:px-8 space-y-3">

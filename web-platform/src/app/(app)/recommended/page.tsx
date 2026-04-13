@@ -96,7 +96,7 @@ export default function RecommendedPage() {
   return (
     <div className="px-5 pt-5">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-10 pb-4">
+      <header className="pb-4">
         <h1 className="font-[family-name:var(--font-anybody)] text-3xl md:text-5xl font-black text-green-600">
           Your Personalized Recommendations.
         </h1>

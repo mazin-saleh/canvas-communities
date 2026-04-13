@@ -131,8 +131,8 @@ export default function ActivityPage() {
     async function load() {
       try {
         const [feedData, upcomingData] = await Promise.all([
-          api.activity.getFeed(Number(user!.id)),
-          api.activity.getUpcoming(),
+          api.activity.getFeed(Number(user!.id)) as Promise<any[]>,
+          api.activity.getUpcoming() as Promise<UpcomingEvent[]>,
         ]);
         setActivity(feedData.map(mapToActivityItem));
         setEvents(upcomingData);

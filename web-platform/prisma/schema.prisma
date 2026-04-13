@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                    Int              @id @default(autoincrement())
+  username              String           @unique
+  password              String
+  platformRole          String           @default("GENERAL_USER")
+  sessionVersion        Int              @default(1)
+  interests             Tag[]            @relation("UserInterests")
+  memberships           Membership[]
+  interactions          Interaction[]
+  recommendations       Recommendation[]
+  createdEvents         Event[]
+  rsvps                 EventRsvp[]
+  createdAnnouncements  Announcement[]
+  uploadedImages        GalleryImage[]
+  ownedCommunities      CommunityOwner[]
+}
+
+model Community {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  description     String           @default("")
+  avatarUrl       String?
+  bannerUrl       String?
+  tags            Tag[]            @relation("CommunityTags")
+  members         Membership[]
+  interactions    Interaction[]
+  recommendations Recommendation[]
+  events          Event[]
+  announcements   Announcement[]
+  gallery         GalleryImage[]
+  roles           ClubRole[]
+  owner           CommunityOwner?
+}
+
+model Tag {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  users       User[]      @relation("UserInterests")
+  communities Community[] @relation("CommunityTags")
+}
+
+model Membership {
+  id            Int              @id @default(autoincrement())
+  user          User             @relation(fields: [userId], references: [id])
+  userId        Int
+  community     Community        @relation(fields: [communityId], references: [id])
+  communityId   Int
+  joinedAt      DateTime         @default(now())
+  assignedRoles ClubMemberRole[]
+
+  @@unique([userId, communityId])
+}
+
+model Interaction {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  community   Community @relation(fields: [communityId], references: [id])
+  communityId Int
+  type        String    // "view", "click", "rsvp", "join"
+  weight      Float     // 0.5,   1.0,    2.0,    3.0
+  createdAt   DateTime  @default(now())
+}
+
+model Recommendation {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  communityId  Int
+  score        Float
+  contentScore Float
+  collabScore  Float
+  computedAt   DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  community    Community @relation(fields: [communityId], references: [id])
+
+  @@unique([userId, communityId])
+}
+
+model Event {
+  id            Int         @id @default(autoincrement())
+  community     Community   @relation(fields: [communityId], references: [id])
+  communityId   Int
+  createdBy     User        @relation(fields: [createdById], references: [id])
+  createdById   Int
+  title         String
+  description   String      @default("")
+  date          DateTime
+  time          String      @default("00:00")
+  locationName  String      @default("")
+  latitude      Float?
+  longitude     Float?
+  eventType     String      @default("General")
+  capacity      Int?
+  status        String      @default("draft")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  rsvps         EventRsvp[]
+}
+
+model EventRsvp {
+  id        Int      @id @default(autoincrement())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model Announcement {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdById   Int
+  title         String
+  description   String    @default("")
+  category      String    @default("news")
+  status        String    @default("draft")
+  pinned        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model GalleryImage {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id])
+  uploadedById  Int
+  url           String
+  caption       String    @default("")
+  category      String    @default("General")
+  createdAt     DateTime  @default(now())
+}
+
+model ClubRole {
+  id            Int                 @id @default(autoincrement())
+  community     Community           @relation(fields: [communityId], references: [id])
+  communityId   Int
+  name          String
+  color         String              @default("#6b7280")
+  createdAt     DateTime            @default(now())
+  permissions   ClubRolePermission[]
+  members       ClubMemberRole[]
+
+  @@unique([communityId, name])
+}
+
+model ClubRolePermission {
+  id          Int      @id @default(autoincrement())
+  clubRole    ClubRole @relation(fields: [clubRoleId], references: [id])
+  clubRoleId  Int
+  permission  String
+
+  @@unique([clubRoleId, permission])
+}
+
+model ClubMemberRole {
+  id            Int        @id @default(autoincrement())
+  membership    Membership @relation(fields: [membershipId], references: [id])
+  membershipId  Int
+  clubRole      ClubRole   @relation(fields: [clubRoleId], references: [id])
+  clubRoleId    Int
+  assignedAt    DateTime   @default(now())
+
+  @@unique([membershipId, clubRoleId])
+}
+
+model CommunityOwner {
+  id            Int       @id @default(autoincrement())
+  community     Community @relation(fields: [communityId], references: [id])
+  communityId   Int       @unique
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
+}

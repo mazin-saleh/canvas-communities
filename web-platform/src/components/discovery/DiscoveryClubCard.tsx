@@ -180,28 +180,6 @@ export default function DiscoveryClubCard({ club }: { club: DiscoveryClub }) {
           )}
         </div>
 
-        {/* Score + reason */}
-        {club.score != null && (
-          <div className="mt-1 flex flex-col gap-0.5">
-            <div className="text-[10px] text-slate-400">
-              {Math.round(club.score * 100)}% match
-            </div>
-            {club.reasonDetail && (
-              <div
-                className={`text-[10px] font-medium ${
-                  club.reasonType === "content"
-                    ? "text-emerald-600"
-                    : club.reasonType === "collab"
-                    ? "text-blue-600"
-                    : "text-amber-600"
-                }`}
-              >
-                {club.reasonDetail}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Bottom bar — tags + buttons */}
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-2">
           {/* Tags — desktop-friendly horizontal rail with subtle controls */}

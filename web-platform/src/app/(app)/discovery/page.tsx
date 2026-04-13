@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import Input from "@/components/ui/input";
@@ -38,6 +38,8 @@ export default function DiscoveryPage() {
 
   const [clubs, setClubs] = useState<any[]>([]);
   const [exploreClubs, setExploreClubs] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +133,40 @@ export default function DiscoveryPage() {
       mounted = false;
     };
   }, [currentUserId]);
+
+  // Search all communities when user types a query
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const q = query.trim();
+    if (!q) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const data = await api.community.list({ q, limit: 20 });
+        const items = Array.isArray(data) ? data : (data as any).items || [];
+        const mapped = items.map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          description: c.description || "Club description coming soon.",
+          tags: (c.tags || []).map((t: any) => (t && t.name ? t.name : String(t || ""))),
+          nextMeeting: { title: "General Meeting", datetime: "TBD", location: "Campus" },
+          logoSrc: c.avatarUrl || "/avatars/placeholder.png",
+          bannerSrc: c.bannerUrl || c.banner || undefined,
+        }));
+        setSearchResults(mapped);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [query]);
 
   const applyFilters = (clubsToFilter = clubs) => {
     const q = query.trim().toLowerCase();
@@ -242,6 +278,25 @@ export default function DiscoveryPage() {
               <p className="text-sm text-red-500 py-8">Error: {error}</p>
             ) : (
               <>
+                {query.trim() && searchResults.length > 0 && (
+                  <DiscoveryCarouselRow
+                    title={
+                      <>
+                        Search results for{" "}
+                        <span className="text-orange-500">{query.trim()}</span>
+                      </>
+                    }
+                    clubs={searchResults}
+                    rowId="search-results"
+                  />
+                )}
+                {query.trim() && searching && (
+                  <p className="text-sm text-slate-500">Searching...</p>
+                )}
+                {query.trim() && !searching && searchResults.length === 0 && (
+                  <p className="text-sm text-slate-400">No clubs found for &ldquo;{query.trim()}&rdquo;</p>
+                )}
+
                 <DiscoveryCarouselRow
                   title={
                     <>
